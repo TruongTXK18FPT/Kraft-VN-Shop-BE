@@ -29,49 +29,8 @@ public class ProductVariantService {
         return productVariantRepository.findByProduct(product).stream().map(this::toResponse).toList();
     }
 
-    public ProductVariantResponse create(UUID productId, ProductVariantRequest req) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
-        ProductVariant v = new ProductVariant();
-        v.setProduct(product);
-        apply(v, req);
-        v = productVariantRepository.save(v);
-        return toResponse(v);
-    }
-
-    public ProductVariantResponse update(UUID variantId, ProductVariantRequest req) {
-        ProductVariant v = productVariantRepository.findById(variantId)
-                .orElseThrow(() -> new IllegalArgumentException("Variant not found"));
-        apply(v, req);
-        v = productVariantRepository.save(v);
-        return toResponse(v);
-    }
-
-    public void delete(UUID variantId) {
-        productVariantRepository.deleteById(variantId);
-    }
-
-    private void apply(ProductVariant v, ProductVariantRequest req) {
-        if (req.getColor() != null)
-            v.setColor(req.getColor());
-        if (req.getSize() != null)
-            v.setSize(req.getSize());
-        if (req.getSku() != null)
-            v.setSku(req.getSku());
-        if (req.getPrice() != null)
-            v.setPrice(req.getPrice());
-        if (req.getSalePrice() != null)
-            v.setSalePrice(req.getSalePrice());
-        if (req.getStock() != null)
-            v.setStock(req.getStock());
-        if (req.getMediaJson() != null)
-            v.setMediaJson(req.getMediaJson());
-    }
-
     private ProductVariantResponse toResponse(ProductVariant v) {
         return new ProductVariantResponse(v.getId(), v.getColor(), v.getSize(), v.getSku(), v.getPrice(),
                 v.getSalePrice(), v.getStock(), v.getMediaJson());
     }
 }
-
-
