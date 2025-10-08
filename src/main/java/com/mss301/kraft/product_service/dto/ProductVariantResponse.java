@@ -23,3 +23,4 @@ public class ProductVariantResponse {
     private String mediaJson;
 }
 
+

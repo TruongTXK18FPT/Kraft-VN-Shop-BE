@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
@@ -123,3 +123,27 @@ logging:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:9002}
+  file-storage:
+    upload-dir: ${FILE_UPLOAD_DIR:uploads}
+    base-url: ${FILE_BASE_URL:http://localhost:8080/api/files}
+
+  # Production Storage Configuration
+  storage:
+    type: ${STORAGE_TYPE:local} # local, s3, gcs, azure
+    upload-dir: ${FILE_UPLOAD_DIR:uploads}
+    base-url: ${FILE_BASE_URL:http://localhost:8080/api/files}
+    cdn-url: ${CDN_URL:} # Set this for production CDN
+
+    # AWS S3 Configuration
+    bucket-name: ${AWS_S3_BUCKET:}
+    region: ${AWS_REGION:us-east-1}
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+
+    # Google Cloud Storage Configuration
+    project-id: ${GCP_PROJECT_ID:}
+    credentials-path: ${GCP_CREDENTIALS_PATH:}
+
+    # Azure Blob Storage Configuration
+    connection-string: ${AZURE_CONNECTION_STRING:}
+    container-name: ${AZURE_CONTAINER_NAME:}

@@ -17,3 +17,4 @@ public class ProductVariantRequest {
     private String mediaJson;
 }
 
+

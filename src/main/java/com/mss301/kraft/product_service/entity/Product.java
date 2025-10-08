@@ -55,6 +55,9 @@ public class Product extends BaseEntity {
     @Column(name = "featured")
     private boolean featured = false;
 
+    @Column(name = "image_url")
+    private String imageUrl; // Main product image
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private ProductStatus status = ProductStatus.DRAFT;

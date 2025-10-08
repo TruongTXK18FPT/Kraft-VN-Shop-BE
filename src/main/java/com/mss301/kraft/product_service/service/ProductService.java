@@ -38,6 +38,8 @@ public class ProductService {
         p.setAttributesJson(req.getAttributesJson());
         if (req.getFeatured() != null)
             p.setFeatured(req.getFeatured());
+        if (req.getImageUrl() != null)
+            p.setImageUrl(req.getImageUrl());
         if (req.getCategoryId() != null) {
             Category c = new Category();
             c.setId(req.getCategoryId());
@@ -64,6 +66,8 @@ public class ProductService {
             p.setAttributesJson(req.getAttributesJson());
         if (req.getFeatured() != null)
             p.setFeatured(req.getFeatured());
+        if (req.getImageUrl() != null)
+            p.setImageUrl(req.getImageUrl());
         if (req.getCategoryId() != null) {
             Category c = new Category();
             c.setId(req.getCategoryId());
@@ -94,7 +98,8 @@ public class ProductService {
         }
         return new ProductResponse(
                 p.getId(), p.getName(), p.getSlug(), p.getSku(), p.getDescription(), p.getBrand(),
-                p.getCollection(), p.getAttributesJson(), p.isFeatured(), priceMin, stockTotal, cover,
-                p.getCategory() != null ? p.getCategory().getId() : null);
+                p.getCollection(), p.getAttributesJson(), p.isFeatured(), p.getImageUrl(), p.getStatus(),
+                p.getCategory() != null ? p.getCategory().getId() : null, priceMin, stockTotal, cover,
+                null); // variants list - null for basic response
     }
 }

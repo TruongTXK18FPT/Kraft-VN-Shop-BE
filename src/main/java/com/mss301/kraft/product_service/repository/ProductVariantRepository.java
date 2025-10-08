@@ -11,3 +11,4 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     List<ProductVariant> findByProduct(Product product);
 }
 
+

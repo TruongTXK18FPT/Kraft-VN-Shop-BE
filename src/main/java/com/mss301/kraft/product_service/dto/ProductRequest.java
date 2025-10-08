@@ -15,5 +15,6 @@ public class ProductRequest {
     private String collection;
     private String attributesJson;
     private Boolean featured;
+    private String imageUrl; // URL to the uploaded image
     private UUID categoryId;
 }

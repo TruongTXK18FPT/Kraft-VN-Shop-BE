@@ -1,5 +1,6 @@
 package com.mss301.kraft.user_service.dto;
 
+import com.mss301.kraft.common.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,5 +19,6 @@ public class UserProfileResponse {
     private String phone;
     private String avatarUrl;
     private String bio;
+    private Role role;
     private java.util.List<AddressResponse> addresses;
 }
