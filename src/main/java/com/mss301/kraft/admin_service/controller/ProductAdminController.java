@@ -1,8 +1,8 @@
-package com.mss301.kraft.product_service.controller;
+package com.mss301.kraft.admin_service.controller;
 
-import com.mss301.kraft.product_service.dto.ProductRequest;
-import com.mss301.kraft.product_service.dto.ProductResponse;
-import com.mss301.kraft.product_service.service.ProductService;
+import com.mss301.kraft.admin_service.dto.ProductRequest;
+import com.mss301.kraft.admin_service.dto.ProductResponse;
+import com.mss301.kraft.admin_service.service.ProductAdminService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -15,36 +15,35 @@ import java.util.UUID;
 @PreAuthorize("hasRole('ADMIN')")
 public class ProductAdminController {
 
-    private final ProductService productService;
+    private final ProductAdminService productAdminService;
 
-    public ProductAdminController(ProductService productService) {
-        this.productService = productService;
+    public ProductAdminController(ProductAdminService productAdminService) {
+        this.productAdminService = productAdminService;
     }
 
     @GetMapping
     public ResponseEntity<List<ProductResponse>> list() {
-        return ResponseEntity.ok(productService.list());
+        return ResponseEntity.ok(productAdminService.list());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> get(@PathVariable UUID id) {
-        return ResponseEntity.ok(productService.get(id));
+        return ResponseEntity.ok(productAdminService.get(id));
     }
 
     @PostMapping
     public ResponseEntity<ProductResponse> create(@RequestBody ProductRequest request) {
-        return ResponseEntity.ok(productService.create(request));
+        return ResponseEntity.ok(productAdminService.create(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> update(@PathVariable UUID id, @RequestBody ProductRequest request) {
-        return ResponseEntity.ok(productService.update(id, request));
+        return ResponseEntity.ok(productAdminService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        productService.delete(id);
+        productAdminService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
-
