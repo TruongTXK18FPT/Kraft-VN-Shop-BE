@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
@@ -15,4 +17,14 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @Query("select coalesce(sum(o.total), 0) from Order o where o.user = :user and o.paymentStatus = com.mss301.kraft.common.enums.PaymentStatus.PAID")
     BigDecimal sumPaidTotalByUser(@Param("user") User user);
+        // Find all orders by user
+    @Query("SELECT o FROM Order o WHERE o.user.id = :userId ORDER BY o.createdAt DESC")
+    List<Order> findByUserId(@Param("userId") UUID userId);
+
+    // Find order by code
+    Optional<Order> findByCode(String code);
+
+    // Find all orders
+    @Query("SELECT o FROM Order o ORDER BY o.createdAt DESC")
+    List<Order> findAllOrders();
 }

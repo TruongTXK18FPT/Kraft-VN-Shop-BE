@@ -15,11 +15,11 @@ import java.util.UUID;
 public class UserAdminService {
 
     private final UserRepository userRepository;
-    private final OrderRepository orderRepository;
+    private final OrderRepository userOrderStatisticsRepository;
 
-    public UserAdminService(UserRepository userRepository, OrderRepository orderRepository) {
+    public UserAdminService(UserRepository userRepository, OrderRepository userOrderStatisticsRepository) {
         this.userRepository = userRepository;
-        this.orderRepository = orderRepository;
+        this.userOrderStatisticsRepository = userOrderStatisticsRepository;
     }
 
     public List<UserSummary> listUsers() {
@@ -45,8 +45,8 @@ public class UserAdminService {
     }
 
     private UserSummary toSummary(User u) {
-        long orderCount = orderRepository.countByUser(u);
-        java.math.BigDecimal totalSpent = orderRepository.sumPaidTotalByUser(u);
+        long orderCount = userOrderStatisticsRepository.countByUser(u);
+        java.math.BigDecimal totalSpent = userOrderStatisticsRepository.sumPaidTotalByUser(u);
         return new UserSummary(u.getId(), u.getName(), u.getEmail(), u.getPhone(), u.isActive(), u.getCreatedAt(),
                 orderCount, totalSpent);
     }

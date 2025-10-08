@@ -1,5 +1,6 @@
 package com.mss301.kraft.product_service.dto;
 
+import com.mss301.kraft.product_service.enums.ProductStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,9 +13,10 @@ public class ProductRequest {
     private String sku;
     private String description;
     private String brand;
-    private String collection;
+    private UUID collectionId;
     private String attributesJson;
     private Boolean featured;
     private String imageUrl; // URL to the uploaded image
     private UUID categoryId;
+    private ProductStatus status;
 }

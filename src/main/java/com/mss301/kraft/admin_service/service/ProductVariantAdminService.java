@@ -64,12 +64,12 @@ public class ProductVariantAdminService {
             v.setSalePrice(req.getSalePrice());
         if (req.getStock() != null)
             v.setStock(req.getStock());
-        if (req.getMediaJson() != null)
-            v.setMediaJson(req.getMediaJson());
+        if (req.getImageUrl() != null)
+            v.setImageUrl(req.getImageUrl());
     }
 
     private ProductVariantResponse toResponse(ProductVariant v) {
         return new ProductVariantResponse(v.getId(), v.getColor(), v.getSize(), v.getSku(), v.getPrice(),
-                v.getSalePrice(), v.getStock(), v.getMediaJson());
+                v.getSalePrice(), v.getStock(), v.getImageUrl());
     }
 }

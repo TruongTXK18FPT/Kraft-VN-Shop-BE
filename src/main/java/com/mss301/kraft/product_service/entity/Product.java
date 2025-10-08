@@ -22,6 +22,8 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.attoparser.dom.Text;
+
 @Getter
 @Setter
 @Entity
@@ -40,14 +42,15 @@ public class Product extends BaseEntity {
     @Column(name = "sku", unique = true)
     private String sku;
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "brand")
     private String brand;
 
-    @Column(name = "collection")
-    private String collection;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "collection_id")
+    private Collection collection;
 
     @Column(name = "attributes_json")
     private String attributesJson; // store JSON text

@@ -14,5 +14,5 @@ public class ProductVariantRequest {
     private BigDecimal price;
     private BigDecimal salePrice;
     private Integer stock;
-    private String mediaJson;
+    private String imageUrl;
 }

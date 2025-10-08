@@ -44,6 +44,6 @@ public class ProductVariant extends BaseEntity {
     @Column(name = "stock")
     private Integer stock = 0;
 
-    @Column(name = "media_json")
-    private String mediaJson; // store JSON text for variant-specific media
+    @Column(name = "image_url")
+    private String imageUrl; // Direct URL to variant image
 }

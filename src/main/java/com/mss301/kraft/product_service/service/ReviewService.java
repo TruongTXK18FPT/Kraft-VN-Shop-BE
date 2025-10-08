@@ -4,7 +4,7 @@ import com.mss301.kraft.common.enums.OrderStatus;
 import com.mss301.kraft.common.exception.BadRequestException;
 import com.mss301.kraft.common.exception.ResourceNotFoundException;
 import com.mss301.kraft.order_service.entity.Order;
-import com.mss301.kraft.order_service.repository.OrderRepository;
+import com.mss301.kraft.user_service.repository.OrderRepository;
 import com.mss301.kraft.product_service.dto.ReviewAdminRequest;
 import com.mss301.kraft.product_service.dto.ReviewRequest;
 import com.mss301.kraft.product_service.dto.ReviewResponse;

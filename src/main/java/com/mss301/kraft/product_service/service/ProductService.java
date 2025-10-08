@@ -1,7 +1,7 @@
-package com.mss301.kraft.admin_service.service;
+package com.mss301.kraft.product_service.service;
 
-import com.mss301.kraft.admin_service.dto.ProductRequest;
-import com.mss301.kraft.admin_service.dto.ProductResponse;
+import com.mss301.kraft.product_service.dto.ProductRequest;
+import com.mss301.kraft.product_service.dto.ProductResponse;
 import com.mss301.kraft.product_service.entity.Category;
 import com.mss301.kraft.product_service.entity.Collection;
 import com.mss301.kraft.product_service.entity.Product;
@@ -9,32 +9,29 @@ import com.mss301.kraft.product_service.repository.CategoryRepository;
 import com.mss301.kraft.product_service.repository.CollectionRepository;
 import com.mss301.kraft.product_service.repository.ProductRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
-public class ProductAdminService {
+public class ProductService {
 
     private final ProductRepository productRepository;
     private final CollectionRepository collectionRepository;
     private final CategoryRepository categoryRepository;
 
-    public ProductAdminService(ProductRepository productRepository, 
-                              CollectionRepository collectionRepository,
-                              CategoryRepository categoryRepository) {
+    public ProductService(ProductRepository productRepository,
+                         CollectionRepository collectionRepository,
+                         CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.collectionRepository = collectionRepository;
         this.categoryRepository = categoryRepository;
     }
 
-    @Transactional(readOnly = true)
     public List<ProductResponse> list() {
         return productRepository.findAll().stream().map(this::toResponse).toList();
     }
 
-    @Transactional(readOnly = true)
     public ProductResponse get(UUID id) {
         return productRepository.findById(id).map(this::toResponse)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
@@ -47,7 +44,6 @@ public class ProductAdminService {
         p.setDescription(req.getDescription());
         p.setBrand(req.getBrand());
         
-        // Handle Collection entity
         if (req.getCollectionId() != null) {
             Collection collection = collectionRepository.findById(req.getCollectionId())
                     .orElseThrow(() -> new IllegalArgumentException("Collection not found"));
@@ -82,7 +78,6 @@ public class ProductAdminService {
         if (req.getBrand() != null)
             p.setBrand(req.getBrand());
         
-        // Handle Collection entity
         if (req.getCollectionId() != null) {
             Collection collection = collectionRepository.findById(req.getCollectionId())
                     .orElseThrow(() -> new IllegalArgumentException("Collection not found"));

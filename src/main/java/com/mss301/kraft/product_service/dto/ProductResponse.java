@@ -22,12 +22,14 @@ public class ProductResponse {
     private String sku;
     private String description;
     private String brand;
-    private String collection;
+    private UUID collectionId;
+    private String collectionName;
     private String attributesJson;
     private boolean featured;
     private String imageUrl; // Main product image URL
     private ProductStatus status;
     private UUID categoryId;
+    private String categoryName;
 
     // Derived from variants
     private BigDecimal priceMin;

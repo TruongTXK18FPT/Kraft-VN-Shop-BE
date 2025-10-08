@@ -20,7 +20,7 @@ public class ProductVariantResponse {
     private BigDecimal price;
     private BigDecimal salePrice;
     private Integer stock;
-    private String mediaJson;
+    private String imageUrl;
 }
 
 

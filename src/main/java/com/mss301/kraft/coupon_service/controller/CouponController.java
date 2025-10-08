@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/coupons")
+@RequestMapping("/api/admin/coupons")
 @RequiredArgsConstructor
-@Tag(name = "Coupon", description = "Coupon management APIs")
+@Tag(name = "Coupon Admin", description = "Coupon management APIs for Admin")
 public class CouponController {
 
     private final CouponService couponService;
@@ -38,25 +38,11 @@ public class CouponController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/code/{code}")
-    @Operation(summary = "Get coupon by code")
-    public ResponseEntity<CouponResponse> getCouponByCode(@PathVariable String code) {
-        CouponResponse response = couponService.getCouponByCode(code);
-        return ResponseEntity.ok(response);
-    }
-
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all coupons (Admin only)")
     public ResponseEntity<List<CouponResponse>> getAllCoupons() {
         List<CouponResponse> responses = couponService.getAllCoupons();
-        return ResponseEntity.ok(responses);
-    }
-
-    @GetMapping("/active")
-    @Operation(summary = "Get all active coupons")
-    public ResponseEntity<List<CouponResponse>> getActiveCoupons() {
-        List<CouponResponse> responses = couponService.getActiveCoupons();
         return ResponseEntity.ok(responses);
     }
 
@@ -76,13 +62,5 @@ public class CouponController {
     public ResponseEntity<Void> deleteCoupon(@PathVariable UUID id) {
         couponService.deleteCoupon(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/validate")
-    @Operation(summary = "Validate coupon code")
-    public ResponseEntity<CouponValidationResponse> validateCoupon(
-            @Valid @RequestBody ValidateCouponRequest request) {
-        CouponValidationResponse response = couponService.validateCoupon(request);
-        return ResponseEntity.ok(response);
     }
 }
