@@ -4,7 +4,7 @@ import com.mss301.kraft.common.enums.OrderStatus;
 import com.mss301.kraft.common.exception.BadRequestException;
 import com.mss301.kraft.common.exception.ResourceNotFoundException;
 import com.mss301.kraft.order_service.entity.Order;
-import com.mss301.kraft.user_service.repository.OrderRepository;
+import com.mss301.kraft.order_service.repository.OrderRepository;
 import com.mss301.kraft.product_service.dto.ReviewAdminRequest;
 import com.mss301.kraft.product_service.dto.ReviewRequest;
 import com.mss301.kraft.product_service.dto.ReviewResponse;
@@ -151,16 +151,16 @@ public class ReviewService {
 
         for (Order order : userOrders) {
             // Only check completed/shipping orders
-            if (order.getStatus() == OrderStatus.COMPLETED || 
-                order.getStatus() == OrderStatus.SHIPPING) {
-                
+            if (order.getStatus() == OrderStatus.COMPLETED ||
+                    order.getStatus() == OrderStatus.SHIPPING) {
+
                 // Check if this order contains the product
                 boolean hasProduct = order.getItems()
                         .stream()
-                        .anyMatch(item -> item.getProductVariant() != null && 
+                        .anyMatch(item -> item.getProductVariant() != null &&
                                 item.getProductVariant().getProduct() != null &&
                                 item.getProductVariant().getProduct().getId().equals(productId));
-                
+
                 if (hasProduct) {
                     return true;
                 }

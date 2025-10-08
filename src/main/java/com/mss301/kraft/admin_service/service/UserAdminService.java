@@ -4,7 +4,7 @@ import com.mss301.kraft.admin_service.dto.UserAdminDtos.ToggleActiveRequest;
 import com.mss301.kraft.admin_service.dto.UserAdminDtos.UserSummary;
 import com.mss301.kraft.common.enums.Role;
 import com.mss301.kraft.user_service.entity.User;
-import com.mss301.kraft.user_service.repository.OrderRepository;
+import com.mss301.kraft.order_service.repository.OrderRepository;
 import com.mss301.kraft.user_service.repository.UserRepository;
 import org.springframework.stereotype.Service;
 

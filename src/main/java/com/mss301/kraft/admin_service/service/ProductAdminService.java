@@ -21,9 +21,9 @@ public class ProductAdminService {
     private final CollectionRepository collectionRepository;
     private final CategoryRepository categoryRepository;
 
-    public ProductAdminService(ProductRepository productRepository, 
-                              CollectionRepository collectionRepository,
-                              CategoryRepository categoryRepository) {
+    public ProductAdminService(ProductRepository productRepository,
+            CollectionRepository collectionRepository,
+            CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.collectionRepository = collectionRepository;
         this.categoryRepository = categoryRepository;
@@ -36,24 +36,25 @@ public class ProductAdminService {
 
     @Transactional(readOnly = true)
     public ProductResponse get(UUID id) {
-        return productRepository.findById(id).map(this::toResponse)
+        return productRepository.findByIdWithRelations(id).map(this::toResponse)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
     }
 
+    @Transactional
     public ProductResponse create(ProductRequest req) {
         Product p = new Product();
         p.setName(req.getName());
         p.setSku(req.getSku());
         p.setDescription(req.getDescription());
         p.setBrand(req.getBrand());
-        
+
         // Handle Collection entity
         if (req.getCollectionId() != null) {
             Collection collection = collectionRepository.findById(req.getCollectionId())
                     .orElseThrow(() -> new IllegalArgumentException("Collection not found"));
             p.setCollection(collection);
         }
-        
+
         p.setAttributesJson(req.getAttributesJson());
         if (req.getFeatured() != null)
             p.setFeatured(req.getFeatured());
@@ -70,8 +71,9 @@ public class ProductAdminService {
         return toResponse(p);
     }
 
+    @Transactional
     public ProductResponse update(UUID id, ProductRequest req) {
-        Product p = productRepository.findById(id)
+        Product p = productRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
         if (req.getName() != null)
             p.setName(req.getName());
@@ -81,14 +83,14 @@ public class ProductAdminService {
             p.setDescription(req.getDescription());
         if (req.getBrand() != null)
             p.setBrand(req.getBrand());
-        
+
         // Handle Collection entity
         if (req.getCollectionId() != null) {
             Collection collection = collectionRepository.findById(req.getCollectionId())
                     .orElseThrow(() -> new IllegalArgumentException("Collection not found"));
             p.setCollection(collection);
         }
-        
+
         if (req.getAttributesJson() != null)
             p.setAttributesJson(req.getAttributesJson());
         if (req.getFeatured() != null)
@@ -125,7 +127,7 @@ public class ProductAdminService {
                     cover = v.getImageUrl();
             }
         }
-        
+
         ProductResponse response = new ProductResponse();
         response.setId(p.getId());
         response.setName(p.getName());
@@ -144,7 +146,7 @@ public class ProductAdminService {
         response.setPriceMin(priceMin);
         response.setStockTotal(stockTotal);
         response.setCoverImage(cover);
-        
+
         return response;
     }
 }
