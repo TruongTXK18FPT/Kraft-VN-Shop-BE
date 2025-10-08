@@ -70,7 +70,7 @@ spring:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij}
   expiration: ${JWT_EXPIRATION:7200000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
@@ -92,6 +92,23 @@ gemini:
     fallback-model: ${GEMINI_FALLBACK_MODEL:gemini-flash-latest}
     temperature: ${GEMINI_TEMPERATURE:0.7}
     max-tokens: ${GEMINI_MAX_TOKENS:2048}
+
+# Cloudinary Configuration
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:dukmqypsu}
+  api-key: ${CLOUDINARY_API_KEY:586925128711466}
+  api-secret: ${CLOUDINARY_API_SECRET:nLiX-bFac9AuNU2FgXxjItv0YSA}
+  secure: ${CLOUDINARY_SECURE:true}
+  folder:
+    products: ${CLOUDINARY_FOLDER_PRODUCTS:kraft/products}
+    avatars: ${CLOUDINARY_FOLDER_AVATARS:kraft/avatars}
+    categories: ${CLOUDINARY_FOLDER_CATEGORIES:kraft/categories}
+    banners: ${CLOUDINARY_FOLDER_BANNERS:kraft/banners}
+    blogs: ${CLOUDINARY_FOLDER_BLOGS:kraft/blogs}
+    brands: ${CLOUDINARY_FOLDER_BRANDS:kraft/brands}
+    collections: ${CLOUDINARY_FOLDER_COLLECTIONS:kraft/collections}
+    others: ${CLOUDINARY_FOLDER_OTHERS:kraft/others}
+
 
 # Server Configuration
 server:

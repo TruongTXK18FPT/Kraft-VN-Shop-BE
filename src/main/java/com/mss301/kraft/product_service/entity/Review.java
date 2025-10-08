@@ -36,9 +36,15 @@ public class Review extends BaseEntity {
     @Column(name = "rating", nullable = false)
     private Integer rating;
 
-    @Column(name = "content")
+    @Column(name = "content", length = 1000)
     private String content;
 
     @Column(name = "approved", nullable = false)
     private boolean approved = false;
+
+    @Column(name = "purchase_verified", nullable = false)
+    private boolean purchaseVerified = false;
+
+    @Column(name = "admin_response", length = 500)
+    private String adminResponse;
 }

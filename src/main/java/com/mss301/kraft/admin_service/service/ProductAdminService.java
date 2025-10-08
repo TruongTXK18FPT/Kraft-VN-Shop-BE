@@ -6,6 +6,7 @@ import com.mss301.kraft.product_service.entity.Category;
 import com.mss301.kraft.product_service.entity.Product;
 import com.mss301.kraft.product_service.repository.ProductRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,10 +20,12 @@ public class ProductAdminService {
         this.productRepository = productRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<ProductResponse> list() {
         return productRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public ProductResponse get(UUID id) {
         return productRepository.findById(id).map(this::toResponse)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
