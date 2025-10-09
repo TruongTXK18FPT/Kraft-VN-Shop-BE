@@ -51,9 +51,31 @@ public class Order extends BaseEntity {
     @Column(name = "total")
     private BigDecimal total;
 
-    @Column(name = "address_snapshot_json")
-    private String addressSnapshotJson; // store JSON address snapshot
+    // Recipient information (snapshot at order time, not linked to user table)
+    @Column(name = "recipient_name")
+    private String recipientName;
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    @Column(name = "recipient_phone")
+    private String recipientPhone;
+
+    @Column(name = "recipient_address")
+    private String recipientAddress;
+
+    @Column(name = "recipient_ward")
+    private String recipientWard;
+
+    @Column(name = "recipient_district")
+    private String recipientDistrict;
+
+    @Column(name = "recipient_province")
+    private String recipientProvince;
+
+    @Column(name = "notes")
+    private String notes; // Customer notes/special instructions
+
+    @Column(name = "payment_method")
+    private String paymentMethod; // e.g., "bank_transfer"
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 }

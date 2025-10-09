@@ -1,7 +1,7 @@
 spring:
   application:
     name: Kraft
-  
+
   main:
     allow-bean-definition-overriding: true
 
@@ -19,7 +19,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -111,7 +111,6 @@ cloudinary:
     brands: ${CLOUDINARY_FOLDER_BRANDS:kraft/brands}
     collections: ${CLOUDINARY_FOLDER_COLLECTIONS:kraft/collections}
     others: ${CLOUDINARY_FOLDER_OTHERS:kraft/others}
-
 
 # Server Configuration
 server:

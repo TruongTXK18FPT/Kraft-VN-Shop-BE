@@ -2,6 +2,7 @@ package com.mss301.kraft.order_service.repository;
 
 import com.mss301.kraft.order_service.entity.Order;
 import com.mss301.kraft.user_service.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,14 +16,18 @@ import java.util.UUID;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
-    // Find all orders by user
+    // Find all orders by user with eager loading of user, items, productVariant,
+    // and product
+    @EntityGraph(attributePaths = { "user", "items", "items.productVariant", "items.productVariant.product" })
     @Query("SELECT o FROM Order o WHERE o.user.id = :userId ORDER BY o.createdAt DESC")
     List<Order> findByUserId(@Param("userId") UUID userId);
 
-    // Find order by code
+    // Find order by code with eager loading
+    @EntityGraph(attributePaths = { "user", "items", "items.productVariant", "items.productVariant.product" })
     Optional<Order> findByCode(String code);
 
-    // Find all orders
+    // Find all orders with eager loading for admin
+    @EntityGraph(attributePaths = { "user", "items", "items.productVariant", "items.productVariant.product" })
     @Query("SELECT o FROM Order o ORDER BY o.createdAt DESC")
     List<Order> findAllOrders();
 

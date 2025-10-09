@@ -5,6 +5,7 @@ import com.mss301.kraft.product_service.dto.ProductResponse;
 import com.mss301.kraft.product_service.entity.Category;
 import com.mss301.kraft.product_service.entity.Collection;
 import com.mss301.kraft.product_service.entity.Product;
+import com.mss301.kraft.product_service.enums.ProductStatus;
 import com.mss301.kraft.product_service.repository.CategoryRepository;
 import com.mss301.kraft.product_service.repository.CollectionRepository;
 import com.mss301.kraft.product_service.repository.ProductRepository;
@@ -21,8 +22,8 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
 
     public ProductService(ProductRepository productRepository,
-                         CollectionRepository collectionRepository,
-                         CategoryRepository categoryRepository) {
+            CollectionRepository collectionRepository,
+            CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.collectionRepository = collectionRepository;
         this.categoryRepository = categoryRepository;
@@ -32,8 +33,26 @@ public class ProductService {
         return productRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    public List<ProductResponse> listActive() {
+        return productRepository.findAllByStatus(ProductStatus.ACTIVE).stream().map(this::toResponse).toList();
+    }
+
+    public List<ProductResponse> listFeatured() {
+        return productRepository.findAllByFeaturedTrueAndStatus(ProductStatus.ACTIVE).stream()
+                .map(this::toResponse).toList();
+    }
+
+    public List<ProductResponse> listOnSale() {
+        return productRepository.findAllOnSale(ProductStatus.ACTIVE).stream().map(this::toResponse).toList();
+    }
+
     public ProductResponse get(UUID id) {
         return productRepository.findById(id).map(this::toResponse)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+    }
+
+    public ProductResponse getBySlug(String slug) {
+        return productRepository.findBySlug(slug).map(this::toResponse)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
     }
 
@@ -43,13 +62,13 @@ public class ProductService {
         p.setSku(req.getSku());
         p.setDescription(req.getDescription());
         p.setBrand(req.getBrand());
-        
+
         if (req.getCollectionId() != null) {
             Collection collection = collectionRepository.findById(req.getCollectionId())
                     .orElseThrow(() -> new IllegalArgumentException("Collection not found"));
             p.setCollection(collection);
         }
-        
+
         p.setAttributesJson(req.getAttributesJson());
         if (req.getFeatured() != null)
             p.setFeatured(req.getFeatured());
@@ -77,13 +96,13 @@ public class ProductService {
             p.setDescription(req.getDescription());
         if (req.getBrand() != null)
             p.setBrand(req.getBrand());
-        
+
         if (req.getCollectionId() != null) {
             Collection collection = collectionRepository.findById(req.getCollectionId())
                     .orElseThrow(() -> new IllegalArgumentException("Collection not found"));
             p.setCollection(collection);
         }
-        
+
         if (req.getAttributesJson() != null)
             p.setAttributesJson(req.getAttributesJson());
         if (req.getFeatured() != null)
@@ -107,12 +126,24 @@ public class ProductService {
 
     private ProductResponse toResponse(Product p) {
         java.math.BigDecimal priceMin = null;
+        java.math.BigDecimal priceMinOriginal = null;
+        java.math.BigDecimal priceMinSale = null;
         int stockTotal = 0;
         String cover = null;
         if (p.getVariants() != null && !p.getVariants().isEmpty()) {
             for (var v : p.getVariants()) {
-                if (v.getPrice() != null) {
-                    priceMin = priceMin == null || v.getPrice().compareTo(priceMin) < 0 ? v.getPrice() : priceMin;
+                java.math.BigDecimal base = v.getPrice();
+                java.math.BigDecimal sale = v.getSalePrice();
+                if (base != null) {
+                    priceMinOriginal = priceMinOriginal == null || base.compareTo(priceMinOriginal) < 0 ? base
+                            : priceMinOriginal;
+                }
+                if (sale != null) {
+                    priceMinSale = priceMinSale == null || sale.compareTo(priceMinSale) < 0 ? sale : priceMinSale;
+                }
+                java.math.BigDecimal candidate = sale != null ? sale : base;
+                if (candidate != null) {
+                    priceMin = priceMin == null || candidate.compareTo(priceMin) < 0 ? candidate : priceMin;
                 }
                 if (v.getStock() != null)
                     stockTotal += v.getStock();
@@ -120,7 +151,7 @@ public class ProductService {
                     cover = v.getImageUrl();
             }
         }
-        
+
         ProductResponse response = new ProductResponse();
         response.setId(p.getId());
         response.setName(p.getName());
@@ -137,9 +168,11 @@ public class ProductService {
         response.setCategoryId(p.getCategory() != null ? p.getCategory().getId() : null);
         response.setCategoryName(p.getCategory() != null ? p.getCategory().getName() : null);
         response.setPriceMin(priceMin);
+        response.setPriceMinOriginal(priceMinOriginal);
+        response.setPriceMinSale(priceMinSale);
         response.setStockTotal(stockTotal);
         response.setCoverImage(cover);
-        
+
         return response;
     }
 }

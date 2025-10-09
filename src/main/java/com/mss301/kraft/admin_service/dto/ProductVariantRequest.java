@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Setter
 public class ProductVariantRequest {
     private String color;
-    private String size;
+    private String size; // recommended values in HelmetSize enum
     private String sku;
     private BigDecimal price;
     private BigDecimal salePrice;

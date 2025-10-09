@@ -39,8 +39,9 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**",
-                                "/api/admin/sliders/active")
+                                "/api/admin/sliders/active", "/api/products/**")
                         .permitAll()
+                        .requestMatchers("/api/cart/**").authenticated()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

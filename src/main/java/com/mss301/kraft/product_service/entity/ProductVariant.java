@@ -8,6 +8,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,6 +20,8 @@ import java.math.BigDecimal;
 @Table(name = "product_variants", indexes = {
         @Index(name = "idx_product_variants_sku", columnList = "sku", unique = true),
         @Index(name = "idx_product_variants_product_id", columnList = "product_id")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_product_variant_color_size", columnNames = { "product_id", "color", "size" })
 })
 public class ProductVariant extends BaseEntity {
 

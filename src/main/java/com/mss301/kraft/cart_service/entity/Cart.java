@@ -2,6 +2,7 @@ package com.mss301.kraft.cart_service.entity;
 
 import com.mss301.kraft.common.BaseEntity;
 import com.mss301.kraft.user_service.entity.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -22,6 +23,8 @@ import java.util.List;
 @Entity
 @Table(name = "carts", indexes = {
         @Index(name = "idx_carts_user_id", columnList = "user_id")
+}, uniqueConstraints = {
+        @jakarta.persistence.UniqueConstraint(name = "uk_carts_user_id", columnNames = "user_id")
 })
 public class Cart extends BaseEntity {
 
@@ -29,7 +32,7 @@ public class Cart extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
 
     @Column(name = "total")

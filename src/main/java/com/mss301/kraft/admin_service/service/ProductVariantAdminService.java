@@ -35,16 +35,20 @@ public class ProductVariantAdminService {
         ProductVariant v = new ProductVariant();
         v.setProduct(product);
         apply(v, req);
-        v = productVariantRepository.save(v);
-        return toResponse(v);
+        validateNumbers(v);
+        validatePricing(v);
+        ProductVariant saved = productVariantRepository.save(v);
+        return toResponse(saved);
     }
 
     public ProductVariantResponse update(UUID variantId, ProductVariantRequest req) {
         ProductVariant v = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new IllegalArgumentException("Variant not found"));
         apply(v, req);
-        v = productVariantRepository.save(v);
-        return toResponse(v);
+        validateNumbers(v);
+        validatePricing(v);
+        ProductVariant saved = productVariantRepository.save(v);
+        return toResponse(saved);
     }
 
     public void delete(UUID variantId) {
@@ -71,5 +75,28 @@ public class ProductVariantAdminService {
     private ProductVariantResponse toResponse(ProductVariant v) {
         return new ProductVariantResponse(v.getId(), v.getColor(), v.getSize(), v.getSku(), v.getPrice(),
                 v.getSalePrice(), v.getStock(), v.getImageUrl());
+    }
+
+    private void validatePricing(ProductVariant v) {
+        if (v.getSalePrice() != null) {
+            if (v.getPrice() == null) {
+                throw new IllegalArgumentException("Price is required when sale price is set");
+            }
+            if (v.getSalePrice().compareTo(v.getPrice()) >= 0) {
+                throw new IllegalArgumentException("Sale price must be lower than price");
+            }
+        }
+    }
+
+    private void validateNumbers(ProductVariant v) {
+        if (v.getPrice() != null && v.getPrice().signum() < 0) {
+            throw new IllegalArgumentException("Price cannot be negative");
+        }
+        if (v.getSalePrice() != null && v.getSalePrice().signum() < 0) {
+            throw new IllegalArgumentException("Sale price cannot be negative");
+        }
+        if (v.getStock() != null && v.getStock() < 0) {
+            throw new IllegalArgumentException("Stock cannot be negative");
+        }
     }
 }

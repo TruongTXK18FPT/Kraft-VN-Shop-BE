@@ -32,7 +32,9 @@ public class ProductResponse {
     private String categoryName;
 
     // Derived from variants
-    private BigDecimal priceMin;
+    private BigDecimal priceMin; // effective min for display (sale if any)
+    private BigDecimal priceMinOriginal; // min base price (without sale)
+    private BigDecimal priceMinSale; // min sale price if any
     private Integer stockTotal;
     private String coverImage; // First image from variants
 
