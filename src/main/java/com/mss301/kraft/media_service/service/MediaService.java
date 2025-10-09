@@ -221,10 +221,10 @@ public class MediaService {
             throw new IllegalArgumentException("File không được rỗng");
         }
 
-        // Validate file size (max 5MB)
-        long maxSize = 5 * 1024 * 1024; // 5MB
+        // Validate file size (max 20MB)
+        long maxSize =  20 * 1024 * 1024; // 20MB
         if (file.getSize() > maxSize) {
-            throw new IllegalArgumentException("File không được vượt quá 5MB");
+            throw new IllegalArgumentException("File không được vượt quá 20MB");
         }
 
         // Validate content type - only allow image formats

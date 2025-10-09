@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**",
-                                "/api/admin/sliders/active", "/api/products/**")
+                                "/api/admin/sliders/active", "/api/products/**", "/api/blogs/**")
                         .permitAll()
                         .requestMatchers("/api/cart/**").authenticated()
                         .anyRequest().authenticated())
