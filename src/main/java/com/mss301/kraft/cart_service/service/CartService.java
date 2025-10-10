@@ -41,8 +41,16 @@ public class CartService {
 
     @Transactional
     public CartResponse create() {
+        // Idempotent: return existing cart for current user if present, else create new
+        User currentUser = resolveCurrentUser();
+        List<Cart> existingForUser = cartRepository.findByUser(currentUser);
+        if (existingForUser != null && !existingForUser.isEmpty()) {
+            // Return the most recent cart
+            return toResponse(existingForUser.get(0));
+        }
+
         Cart cart = new Cart();
-        cart.setUser(resolveCurrentUser());
+        cart.setUser(currentUser);
         cart.setTotal(BigDecimal.ZERO);
         cart = cartRepository.save(cart);
         return toResponse(cart);
@@ -62,6 +70,7 @@ public class CartService {
     public CartResponse get(UUID cartId) {
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+        assertOwnership(cart);
         return toResponse(cart);
     }
 
@@ -69,6 +78,7 @@ public class CartService {
     public CartResponse addItem(UUID cartId, AddItemRequest request) {
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+        assertOwnership(cart);
         ProductVariant variant = productVariantRepository.findById(request.getVariantId())
                 .orElseThrow(() -> new IllegalArgumentException("Variant not found"));
         int qty = Math.max(1, request.getQty() == null ? 1 : request.getQty());
@@ -99,6 +109,7 @@ public class CartService {
     public CartResponse updateItem(UUID cartId, UUID itemId, UpdateItemRequest request) {
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+        assertOwnership(cart);
         CartItem item = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("CartItem not found"));
         if (!item.getCart().getId().equals(cart.getId())) {
@@ -127,6 +138,7 @@ public class CartService {
     public CartResponse removeItem(UUID cartId, UUID itemId) {
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+        assertOwnership(cart);
         CartItem item = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("CartItem not found"));
         if (!item.getCart().getId().equals(cart.getId())) {
@@ -147,6 +159,7 @@ public class CartService {
     public CartResponse clear(UUID cartId) {
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+        assertOwnership(cart);
         for (CartItem it : cartItemRepository.findByCart(cart)) {
             cartItemRepository.delete(it);
         }
@@ -159,6 +172,16 @@ public class CartService {
         }
         cartRepository.save(cart);
         return toResponse(cart);
+    }
+
+    private void assertOwnership(Cart cart) {
+        User currentUser = resolveCurrentUser();
+        if (cart.getUser() == null || currentUser == null || cart.getUser().getId() == null) {
+            throw new IllegalArgumentException("Cart has no owner");
+        }
+        if (!cart.getUser().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("Access to another user's cart is not allowed");
+        }
     }
 
     private void recalcTotal(Cart cart) {
