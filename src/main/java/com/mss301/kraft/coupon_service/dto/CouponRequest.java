@@ -47,4 +47,6 @@ public class CouponRequest {
     private OffsetDateTime startsAt;
     
     private OffsetDateTime expiresAt;
+    
+    private Boolean showInBanner;
 }

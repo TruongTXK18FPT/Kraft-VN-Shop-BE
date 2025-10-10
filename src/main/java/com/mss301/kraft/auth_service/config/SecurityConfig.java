@@ -41,7 +41,9 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**",
                                 "/api/admin/sliders/active", "/api/products/**", "/api/blogs/**",
-                                "/api/collections/**", "/api/categories/**", "/api/coupons/**")
+                                "/api/collections/**", "/api/categories/**", "/api/coupons/**",
+                                "/api/reviews/product/*", "/api/reviews/product/*/stats",
+                                "/api/admin/bank-accounts/active", "/api/analytics/**", "/api/test/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

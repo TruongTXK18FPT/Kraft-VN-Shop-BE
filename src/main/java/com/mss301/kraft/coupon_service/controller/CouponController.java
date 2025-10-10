@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -25,9 +27,14 @@ public class CouponController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create new coupon (Admin only)")
-    public ResponseEntity<CouponResponse> createCoupon(@Valid @RequestBody CouponRequest request) {
-        CouponResponse response = couponService.createCoupon(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<?> createCoupon(@Valid @RequestBody CouponRequest request) {
+        try {
+            CouponResponse response = couponService.createCoupon(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            // Exception sẽ được xử lý bởi GlobalExceptionHandler
+            throw e;
+        }
     }
 
     @GetMapping("/{id}")
@@ -71,5 +78,17 @@ public class CouponController {
     public ResponseEntity<Void> deleteCoupon(@PathVariable UUID id) {
         couponService.deleteCoupon(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/check-code/{code}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Check if coupon code exists (Admin only)")
+    public ResponseEntity<Map<String, Object>> checkCouponCode(@PathVariable String code) {
+        boolean exists = couponService.couponCodeExists(code);
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", code);
+        response.put("exists", exists);
+        response.put("message", exists ? "Mã coupon đã tồn tại" : "Mã coupon có thể sử dụng");
+        return ResponseEntity.ok(response);
     }
 }

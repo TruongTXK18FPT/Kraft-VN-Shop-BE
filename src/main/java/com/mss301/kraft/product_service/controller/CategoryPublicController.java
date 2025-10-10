@@ -37,3 +37,4 @@ public class CategoryPublicController {
                 .orElse(ResponseEntity.notFound().build());
     }
 }
+

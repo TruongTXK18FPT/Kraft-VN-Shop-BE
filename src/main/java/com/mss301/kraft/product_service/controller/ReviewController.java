@@ -1,5 +1,6 @@
 package com.mss301.kraft.product_service.controller;
 
+import com.mss301.kraft.common.util.AuthUtils;
 import com.mss301.kraft.product_service.dto.ReviewAdminRequest;
 import com.mss301.kraft.product_service.dto.ReviewRequest;
 import com.mss301.kraft.product_service.dto.ReviewResponse;
@@ -31,7 +32,7 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> createReview(
             @Valid @RequestBody ReviewRequest request,
             Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = AuthUtils.getUserId(authentication);
         ReviewResponse response = reviewService.createReview(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -55,7 +56,7 @@ public class ReviewController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get current user's reviews")
     public ResponseEntity<List<ReviewResponse>> getMyReviews(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = AuthUtils.getUserId(authentication);
         List<ReviewResponse> reviews = reviewService.getUserReviews(userId);
         return ResponseEntity.ok(reviews);
     }
@@ -91,7 +92,7 @@ public class ReviewController {
     public ResponseEntity<Void> deleteReview(
             @PathVariable UUID reviewId,
             Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = AuthUtils.getUserId(authentication);
         reviewService.deleteReview(reviewId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -111,6 +112,7 @@ public class ReviewController {
         Long count = reviewService.getProductReviewCount(productId);
         return ResponseEntity.ok(new ReviewStats(avgRating, count));
     }
+
 
     // Inner class for review statistics
     public record ReviewStats(Double averageRating, Long totalReviews) {}

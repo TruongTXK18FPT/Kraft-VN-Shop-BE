@@ -1,6 +1,7 @@
 package com.mss301.kraft.admin_service.service;
 
 import com.mss301.kraft.admin_service.dto.DashboardAnalyticsResponse;
+import com.mss301.kraft.admin_service.dto.ProductRevenueData;
 import com.mss301.kraft.order_service.repository.OrderRepository;
 import com.mss301.kraft.product_service.repository.ProductRepository;
 import com.mss301.kraft.user_service.repository.UserRepository;
@@ -117,30 +118,64 @@ public class DashboardService {
     }
     
     private List<DashboardAnalyticsResponse.ProductSalesData> generateProductSalesData(BigDecimal totalRevenue) {
-        // This would ideally come from actual product sales data
-        // For now, using mock distribution
         List<DashboardAnalyticsResponse.ProductSalesData> data = new ArrayList<>();
         
-        data.add(DashboardAnalyticsResponse.ProductSalesData.builder()
-                .name("Pegasus Series")
-                .value(45)
-                .sales(totalRevenue.multiply(new BigDecimal("0.45")).setScale(0, RoundingMode.HALF_UP))
-                .build());
+        try {
+            // Get real product revenue data from orders
+            List<ProductRevenueData> productRevenues = getProductRevenueData();
+            
+            if (productRevenues.isEmpty()) {
+                // Return empty list if no real data available
+                return new ArrayList<>();
+            }
+            
+            // Convert to dashboard format
+            for (ProductRevenueData productRevenue : productRevenues) {
+                BigDecimal percentage = totalRevenue.compareTo(BigDecimal.ZERO) > 0 
+                    ? productRevenue.getRevenue().multiply(new BigDecimal("100")).divide(totalRevenue, 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
                 
-        data.add(DashboardAnalyticsResponse.ProductSalesData.builder()
-                .name("Eros Collection")
-                .value(30)
-                .sales(totalRevenue.multiply(new BigDecimal("0.30")).setScale(0, RoundingMode.HALF_UP))
-                .build());
-                
-        data.add(DashboardAnalyticsResponse.ProductSalesData.builder()
-                .name("Alpha Series")
-                .value(25)
-                .sales(totalRevenue.multiply(new BigDecimal("0.25")).setScale(0, RoundingMode.HALF_UP))
-                .build());
+                data.add(DashboardAnalyticsResponse.ProductSalesData.builder()
+                        .name(productRevenue.getCollectionName())
+                        .value(percentage.doubleValue())
+                        .sales(productRevenue.getRevenue())
+                        .build());
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error generating product sales data: " + e.getMessage());
+            // Return empty list instead of mock data
+            return new ArrayList<>();
+        }
         
         return data;
     }
+    
+    private List<ProductRevenueData> getProductRevenueData() {
+        try {
+            // Query actual order data grouped by product collection
+            List<Object[]> results = orderRepository.findProductRevenueByCollection();
+            List<ProductRevenueData> data = new ArrayList<>();
+            
+            for (Object[] result : results) {
+                String collectionName = (String) result[0];
+                BigDecimal revenue = (BigDecimal) result[1];
+                Long orderCount = (Long) result[2];
+                
+                data.add(ProductRevenueData.builder()
+                        .collectionName(collectionName)
+                        .revenue(revenue)
+                        .orderCount(orderCount)
+                        .build());
+            }
+            
+            return data;
+        } catch (Exception e) {
+            System.err.println("Error getting product revenue data: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    
     
     private List<DashboardAnalyticsResponse.VisitorData> generateVisitorData() {
         List<DashboardAnalyticsResponse.VisitorData> data = new ArrayList<>();

@@ -5,6 +5,9 @@ import com.mss301.kraft.cart_service.entity.CartItem;
 import com.mss301.kraft.cart_service.repository.CartRepository;
 import com.mss301.kraft.common.enums.OrderStatus;
 import com.mss301.kraft.common.enums.PaymentStatus;
+import com.mss301.kraft.coupon_service.service.CouponService;
+import com.mss301.kraft.coupon_service.dto.ValidateCouponRequest;
+import com.mss301.kraft.coupon_service.dto.CouponValidationResponse;
 import com.mss301.kraft.order_service.dto.CreateOrderRequest;
 import com.mss301.kraft.order_service.dto.OrderItemResponse;
 import com.mss301.kraft.order_service.dto.OrderResponse;
@@ -30,14 +33,17 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
+    private final CouponService couponService;
     private final SecureRandom random = new SecureRandom();
 
     public OrderService(OrderRepository orderRepository,
             CartRepository cartRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            CouponService couponService) {
         this.orderRepository = orderRepository;
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
+        this.couponService = couponService;
     }
 
     /**
@@ -155,14 +161,63 @@ public class OrderService {
 
         System.out.println("DEBUG: Finished processing all items. Total order items: " + orderItems.size());
 
-        // Set total = items total + shipping fee
-        order.setTotal(itemsTotal.add(order.getShippingFee()));
+        // Process coupon if provided
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        String couponCode = null;
+        com.mss301.kraft.coupon_service.entity.Coupon coupon = null;
+        if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
+            try {
+                ValidateCouponRequest validateRequest = ValidateCouponRequest.builder()
+                        .couponCode(request.getCouponCode())
+                        .userId(user.getId())
+                        .orderTotal(itemsTotal)
+                        .build();
+                
+                CouponValidationResponse validation = couponService.validateCoupon(validateRequest);
+                if (validation.getValid()) {
+                    discountAmount = validation.getDiscountAmount();
+                    couponCode = request.getCouponCode();
+                    // Get the coupon entity by ID
+                    coupon = couponService.getCouponEntityById(validation.getCouponId());
+                } else {
+                    throw new RuntimeException("Coupon validation failed: " + validation.getMessage());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Invalid coupon: " + e.getMessage());
+            }
+        }
+
+        // Set total = items total + shipping fee - discount
+        BigDecimal finalTotal = itemsTotal.add(order.getShippingFee()).subtract(discountAmount);
+        order.setTotal(finalTotal);
+        order.setCoupon(coupon);
+        order.setCouponCode(couponCode);
+        order.setDiscountAmount(discountAmount);
         order.setItems(orderItems);
 
         System.out.println("DEBUG: Set order items, count: " + order.getItems().size());
 
         // Save order (cascade will save order items)
         Order savedOrder = orderRepository.save(order);
+
+        // Apply coupon usage after order is created
+        if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty() && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+            try {
+                ValidateCouponRequest validateRequest = ValidateCouponRequest.builder()
+                        .couponCode(request.getCouponCode())
+                        .userId(user.getId())
+                        .orderTotal(itemsTotal)
+                        .build();
+                
+                CouponValidationResponse validation = couponService.validateCoupon(validateRequest);
+                if (validation.getValid()) {
+                    couponService.applyCoupon(validation.getCouponId(), user.getId(), savedOrder.getId(), discountAmount);
+                }
+            } catch (Exception e) {
+                // Log error but don't fail the order creation
+                System.err.println("Failed to apply coupon usage: " + e.getMessage());
+            }
+        }
 
         // Clear cart items after successful order creation
         cart.getItems().clear();
@@ -230,6 +285,11 @@ public class OrderService {
 
         response.setNotes(order.getNotes());
         response.setPaymentMethod(order.getPaymentMethod());
+
+        // Coupon information
+        response.setCouponId(order.getCoupon() != null ? order.getCoupon().getId() : null);
+        response.setCouponCode(order.getCouponCode());
+        response.setDiscountAmount(order.getDiscountAmount());
 
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());

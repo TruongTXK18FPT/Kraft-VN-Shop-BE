@@ -21,4 +21,5 @@ public class CreateOrderRequest {
     private String notes;
     private String paymentMethod; // Should be "bank_transfer"
     private BigDecimal shippingFee;
+    private String couponCode; // Optional coupon code
 }

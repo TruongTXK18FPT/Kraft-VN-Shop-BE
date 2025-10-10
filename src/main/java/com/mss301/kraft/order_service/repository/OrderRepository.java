@@ -59,4 +59,19 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt BETWEEN :start AND :end")
     Long countByCreatedAtBetween(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+
+    // Product revenue by collection
+    @Query("SELECT " +
+           "COALESCE(p.collection.name, 'Không có collection') as collectionName, " +
+           "SUM(oi.qty * oi.price) as revenue, " +
+           "COUNT(DISTINCT o.id) as orderCount " +
+           "FROM Order o " +
+           "JOIN o.items oi " +
+           "JOIN oi.productVariant pv " +
+           "JOIN pv.product p " +
+           "LEFT JOIN p.collection " +
+           "WHERE o.paymentStatus = com.mss301.kraft.common.enums.PaymentStatus.PAID " +
+           "GROUP BY p.collection.name " +
+           "ORDER BY revenue DESC")
+    List<Object[]> findProductRevenueByCollection();
 }

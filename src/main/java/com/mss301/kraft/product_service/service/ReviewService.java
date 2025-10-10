@@ -11,6 +11,7 @@ import com.mss301.kraft.product_service.dto.ReviewResponse;
 import com.mss301.kraft.product_service.entity.Product;
 import com.mss301.kraft.product_service.entity.Review;
 import com.mss301.kraft.product_service.repository.ProductRepository;
+import com.mss301.kraft.product_service.repository.ProductVariantRepository;
 import com.mss301.kraft.product_service.repository.ReviewRepository;
 import com.mss301.kraft.user_service.entity.User;
 import com.mss301.kraft.user_service.repository.UserRepository;
@@ -29,40 +30,97 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
 
     @Transactional
     public ReviewResponse createReview(ReviewRequest request, UUID userId) {
-        // Check if user exists
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        try {
+            System.out.println("=== REVIEW CREATION DEBUG ===");
+            System.out.println("Creating review for user: " + userId + ", product: " + request.getProductId());
+            
+            // Debug: Check if repositories are working
+            System.out.println("Testing repositories...");
+            System.out.println("ProductRepository count: " + productRepository.count());
+            System.out.println("ProductVariantRepository count: " + productVariantRepository.count());
+            
+            // Debug: Check if the ID is valid
+            System.out.println("Product ID is valid UUID: " + request.getProductId());
+            
+            // Check if user exists
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            System.out.println("User found: " + user.getName());
 
-        // Check if product exists
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+            // Try to find product by ID first, if not found, try to find by variant ID
+            Product product = null;
+            System.out.println("Step 1: Trying to find product by ID: " + request.getProductId());
+            try {
+                product = productRepository.findById(request.getProductId())
+                        .orElse(null);
+                if (product != null) {
+                    System.out.println("SUCCESS: Product found by ID: " + product.getName());
+                } else {
+                    System.out.println("Product not found by ID, trying variant ID...");
+                }
+            } catch (Exception e) {
+                System.out.println("ERROR: Product not found by ID, trying variant ID: " + e.getMessage());
+            }
+            
+            // If product not found by ID, try to find by variant ID
+            if (product == null) {
+                System.out.println("Step 2: Trying to find product by variant ID: " + request.getProductId());
+                try {
+                    var variant = productVariantRepository.findById(request.getProductId()).orElse(null);
+                    System.out.println("Variant lookup result: " + (variant != null ? "Found" : "Not found"));
+                    if (variant != null) {
+                        System.out.println("Variant product: " + (variant.getProduct() != null ? "Has product" : "No product"));
+                        if (variant.getProduct() != null) {
+                            product = variant.getProduct();
+                            System.out.println("SUCCESS: Product found by variant ID: " + product.getName());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("ERROR: Product not found by variant ID: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+            
+            if (product == null) {
+                System.out.println("ERROR: Product not found with ID: " + request.getProductId());
+                throw new ResourceNotFoundException("Product not found with ID: " + request.getProductId());
+            }
 
-        // Check if user already reviewed this product
-        reviewRepository.findByUserIdAndProductId(userId, request.getProductId())
-                .ifPresent(r -> {
-                    throw new BadRequestException("You have already reviewed this product");
-                });
+            // Check if user already reviewed this product
+            reviewRepository.findByUserIdAndProductId(userId, product.getId())
+                    .ifPresent(r -> {
+                        throw new BadRequestException("You have already reviewed this product");
+                    });
 
-        // Verify purchase: check if user has bought this product
-        boolean hasPurchased = verifyPurchase(userId, request.getProductId());
+            // Skip purchase verification for now to test
+            boolean hasPurchased = false; // verifyPurchase(userId, product.getId());
+            System.out.println("Purchase verified: " + hasPurchased);
 
-        // Create review
-        Review review = new Review();
-        review.setUser(user);
-        review.setProduct(product);
-        review.setRating(request.getRating());
-        review.setContent(request.getContent());
-        review.setPurchaseVerified(hasPurchased);
-        review.setApproved(false); // Needs admin approval
+            // Create review
+            Review review = new Review();
+            review.setUser(user);
+            review.setProduct(product);
+            review.setRating(request.getRating());
+            review.setContent(request.getContent());
+            review.setPurchaseVerified(hasPurchased);
+            review.setApproved(false); // Needs admin approval
 
-        Review savedReview = reviewRepository.save(review);
+            System.out.println("Saving review...");
+            Review savedReview = reviewRepository.save(review);
+            System.out.println("Review saved with ID: " + savedReview.getId());
 
-        return mapToResponse(savedReview);
+            return mapToResponse(savedReview);
+        } catch (Exception e) {
+            System.err.println("Error creating review: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create review: " + e.getMessage(), e);
+        }
     }
 
     public List<ReviewResponse> getApprovedReviewsByProduct(UUID productId) {
@@ -147,43 +205,69 @@ public class ReviewService {
      * Checks if user has any completed order containing this product
      */
     private boolean verifyPurchase(UUID userId, UUID productId) {
-        List<Order> userOrders = orderRepository.findByUserId(userId);
+        try {
+            List<Order> userOrders = orderRepository.findByUserId(userId);
+            
+            if (userOrders == null || userOrders.isEmpty()) {
+                return false;
+            }
 
-        for (Order order : userOrders) {
-            // Only check completed/shipping orders
-            if (order.getStatus() == OrderStatus.COMPLETED ||
-                    order.getStatus() == OrderStatus.SHIPPING) {
+            for (Order order : userOrders) {
+                // Only check completed/shipping orders
+                if (order.getStatus() == OrderStatus.COMPLETED ||
+                        order.getStatus() == OrderStatus.SHIPPING) {
 
-                // Check if this order contains the product
-                boolean hasProduct = order.getItems()
-                        .stream()
-                        .anyMatch(item -> item.getProductVariant() != null &&
-                                item.getProductVariant().getProduct() != null &&
-                                item.getProductVariant().getProduct().getId().equals(productId));
+                    // Check if this order contains the product
+                    if (order.getItems() != null) {
+                        boolean hasProduct = order.getItems()
+                                .stream()
+                                .anyMatch(item -> {
+                                    try {
+                                        return item.getProductVariant() != null &&
+                                                item.getProductVariant().getProduct() != null &&
+                                                item.getProductVariant().getProduct().getId().equals(productId);
+                                    } catch (Exception e) {
+                                        System.err.println("Error checking product variant: " + e.getMessage());
+                                        return false;
+                                    }
+                                });
 
-                if (hasProduct) {
-                    return true;
+                        if (hasProduct) {
+                            return true;
+                        }
+                    }
                 }
             }
-        }
 
-        return false;
+            return false;
+        } catch (Exception e) {
+            System.err.println("Error verifying purchase: " + e.getMessage());
+            e.printStackTrace();
+            // Return false if verification fails
+            return false;
+        }
     }
 
     private ReviewResponse mapToResponse(Review review) {
-        return ReviewResponse.builder()
-                .id(review.getId())
-                .productId(review.getProduct().getId())
-                .productName(review.getProduct().getName())
-                .userId(review.getUser().getId())
-                .userName(review.getUser().getName())
-                .rating(review.getRating())
-                .content(review.getContent())
-                .approved(review.isApproved())
-                .purchaseVerified(review.isPurchaseVerified())
-                .adminResponse(review.getAdminResponse())
-                .createdAt(review.getCreatedAt())
-                .updatedAt(review.getUpdatedAt())
-                .build();
+        try {
+            return ReviewResponse.builder()
+                    .id(review.getId())
+                    .productId(review.getProduct() != null ? review.getProduct().getId() : null)
+                    .productName(review.getProduct() != null ? review.getProduct().getName() : "Unknown Product")
+                    .userId(review.getUser() != null ? review.getUser().getId() : null)
+                    .userName(review.getUser() != null ? review.getUser().getName() : "Unknown User")
+                    .rating(review.getRating())
+                    .content(review.getContent())
+                    .approved(review.isApproved())
+                    .purchaseVerified(review.isPurchaseVerified())
+                    .adminResponse(review.getAdminResponse())
+                    .createdAt(review.getCreatedAt())
+                    .updatedAt(review.getUpdatedAt())
+                    .build();
+        } catch (Exception e) {
+            System.err.println("Error mapping review to response: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to map review to response: " + e.getMessage(), e);
+        }
     }
 }

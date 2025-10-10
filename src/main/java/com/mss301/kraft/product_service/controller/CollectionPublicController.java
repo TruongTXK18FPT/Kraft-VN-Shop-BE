@@ -37,3 +37,4 @@ public class CollectionPublicController {
                 .orElse(ResponseEntity.notFound().build());
     }
 }
+

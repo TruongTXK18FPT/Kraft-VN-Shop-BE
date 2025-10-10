@@ -33,6 +33,13 @@ public class CouponPublicController {
         return ResponseEntity.ok(responses);
     }
 
+    @GetMapping("/banner")
+    @Operation(summary = "Get coupons for banner display")
+    public ResponseEntity<List<CouponResponse>> getBannerCoupons() {
+        List<CouponResponse> responses = couponService.getBannerCoupons();
+        return ResponseEntity.ok(responses);
+    }
+
     @PostMapping("/validate")
     @Operation(summary = "Validate coupon code")
     public ResponseEntity<CouponValidationResponse> validateCoupon(

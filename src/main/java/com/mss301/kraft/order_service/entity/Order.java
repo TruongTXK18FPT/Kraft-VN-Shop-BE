@@ -76,6 +76,17 @@ public class Order extends BaseEntity {
     @Column(name = "payment_method")
     private String paymentMethod; // e.g., "bank_transfer"
 
+    // Coupon information
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id")
+    private com.mss301.kraft.coupon_service.entity.Coupon coupon; // The coupon used
+
+    @Column(name = "coupon_code")
+    private String couponCode; // The coupon code used (for display)
+
+    @Column(name = "discount_amount")
+    private BigDecimal discountAmount; // The discount amount applied
+
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 }

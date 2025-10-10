@@ -1,5 +1,6 @@
 package com.mss301.kraft.auth_service.service;
 
+import com.mss301.kraft.auth_service.security.CustomUserDetails;
 import com.mss301.kraft.user_service.entity.User;
 import com.mss301.kraft.user_service.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
@@ -27,9 +28,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         Collection<? extends GrantedAuthority> authorities = List
                 .of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPasswordHash(),
-                authorities);
+        return new CustomUserDetails(user, authorities);
     }
 }

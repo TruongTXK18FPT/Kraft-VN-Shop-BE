@@ -13,6 +13,7 @@ import java.util.TimeZone;
 @SpringBootApplication
 public class KraftApplication {
 
+    
     public static void main(String[] args) {
         // Set default timezone to Vietnam (GMT+7)
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));

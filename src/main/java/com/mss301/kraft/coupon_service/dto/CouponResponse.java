@@ -35,4 +35,5 @@ public class CouponResponse {
     private LocalDateTime updatedAt;
     private Boolean isActive;
     private Boolean isExpired;
+    private Boolean showInBanner;
 }

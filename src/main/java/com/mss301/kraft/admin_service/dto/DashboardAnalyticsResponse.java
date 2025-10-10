@@ -44,7 +44,7 @@ public class DashboardAnalyticsResponse {
     @AllArgsConstructor
     public static class ProductSalesData {
         private String name;
-        private Integer value;
+        private Double value;
         private BigDecimal sales;
     }
     

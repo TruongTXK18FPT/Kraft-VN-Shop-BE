@@ -38,6 +38,11 @@ public class OrderResponse {
     private String notes;
     private String paymentMethod;
 
+    // Coupon information
+    private UUID couponId;
+    private String couponCode;
+    private BigDecimal discountAmount;
+
     private List<OrderItemResponse> items;
 
     private OffsetDateTime createdAt;

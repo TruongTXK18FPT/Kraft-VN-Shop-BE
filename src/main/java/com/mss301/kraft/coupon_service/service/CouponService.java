@@ -8,6 +8,8 @@ import com.mss301.kraft.coupon_service.entity.Coupon;
 import com.mss301.kraft.coupon_service.entity.CouponUsage;
 import com.mss301.kraft.coupon_service.enums.CouponStatus;
 import com.mss301.kraft.coupon_service.enums.CouponType;
+import com.mss301.kraft.coupon_service.exception.CouponAlreadyExistsException;
+import com.mss301.kraft.coupon_service.exception.CouponNotFoundException;
 import com.mss301.kraft.coupon_service.repository.CouponRepository;
 import com.mss301.kraft.coupon_service.repository.CouponUsageRepository;
 import com.mss301.kraft.user_service.entity.User;
@@ -41,7 +43,7 @@ public class CouponService {
     @Transactional
     public CouponResponse createCoupon(CouponRequest request) {
         if (couponRepository.existsByCode(request.getCode())) {
-            throw new RuntimeException("Mã coupon đã tồn tại: " + request.getCode());
+            throw new CouponAlreadyExistsException("Mã coupon đã tồn tại: " + request.getCode());
         }
 
         Coupon coupon = Coupon.builder()
@@ -57,6 +59,7 @@ public class CouponService {
                 .status(request.getStatus() != null ? request.getStatus() : CouponStatus.ACTIVE)
                 .startsAt(request.getStartsAt())
                 .expiresAt(request.getExpiresAt())
+                .showInBanner(request.getShowInBanner() != null ? request.getShowInBanner() : false)
                 .build();
 
         coupon = couponRepository.save(coupon);
@@ -67,13 +70,18 @@ public class CouponService {
 
     public CouponResponse getCouponById(UUID id) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy coupon với id: " + id));
+                .orElseThrow(() -> new CouponNotFoundException(id));
         return convertToResponse(coupon);
+    }
+
+    public Coupon getCouponEntityById(UUID id) {
+        return couponRepository.findById(id)
+                .orElseThrow(() -> new CouponNotFoundException(id));
     }
 
     public CouponResponse getCouponByCode(String code) {
         Coupon coupon = couponRepository.findByCode(code)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy coupon với mã: " + code));
+                .orElseThrow(() -> new CouponNotFoundException(code, true));
         return convertToResponse(coupon);
     }
 
@@ -100,14 +108,25 @@ public class CouponService {
                 .collect(Collectors.toList());
     }
 
+    public List<CouponResponse> getBannerCoupons() {
+        return couponRepository.findActiveNotExpired(CouponStatus.ACTIVE, OffsetDateTime.now()).stream()
+                .filter(coupon -> Boolean.TRUE.equals(coupon.getShowInBanner()))
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public boolean couponCodeExists(String code) {
+        return couponRepository.existsByCode(code);
+    }
+
     @Transactional
     public CouponResponse updateCoupon(UUID id, CouponRequest request) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy coupon với id: " + id));
+                .orElseThrow(() -> new CouponNotFoundException(id));
 
         if (!coupon.getCode().equals(request.getCode()) &&
                 couponRepository.existsByCode(request.getCode())) {
-            throw new RuntimeException("Mã coupon đã tồn tại: " + request.getCode());
+            throw new CouponAlreadyExistsException("Mã coupon đã tồn tại: " + request.getCode());
         }
 
         coupon.setCode(request.getCode());
@@ -121,6 +140,7 @@ public class CouponService {
         coupon.setStatus(request.getStatus());
         coupon.setStartsAt(request.getStartsAt());
         coupon.setExpiresAt(request.getExpiresAt());
+        coupon.setShowInBanner(request.getShowInBanner());
 
         coupon = couponRepository.save(coupon);
         log.info("Updated coupon: {}", coupon.getCode());
@@ -131,29 +151,39 @@ public class CouponService {
     @Transactional
     public void deleteCoupon(UUID id) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy coupon với id: " + id));
+                .orElseThrow(() -> new CouponNotFoundException(id));
 
         couponRepository.delete(coupon);
         log.info("Deleted coupon: {}", coupon.getCode());
     }
 
     public CouponValidationResponse validateCoupon(ValidateCouponRequest request) {
+        log.info("Validating coupon: {} for user: {} with order total: {}", 
+                request.getCouponCode(), request.getUserId(), request.getOrderTotal());
+        
         Coupon coupon = couponRepository.findActiveByCode(request.getCouponCode(), OffsetDateTime.now())
                 .orElse(null);
 
         if (coupon == null) {
+            log.warn("Coupon not found or not active: {}", request.getCouponCode());
             return CouponValidationResponse.builder()
                     .valid(false)
                     .message("Mã giảm giá không hợp lệ hoặc đã hết hạn")
                     .build();
         }
+        
+        log.info("Found coupon: {} - Status: {}, Starts: {}, Expires: {}", 
+                coupon.getCode(), coupon.getStatus(), coupon.getStartsAt(), coupon.getExpiresAt());
 
         // Check usage limit per user
         if (coupon.getUsageLimitPerUser() != null) {
             Long userUsageCount = couponUsageRepository.countByCouponIdAndUserId(
                     coupon.getId(), request.getUserId());
+            
+            log.info("User usage count: {} / {}", userUsageCount, coupon.getUsageLimitPerUser());
 
             if (userUsageCount >= coupon.getUsageLimitPerUser()) {
+                log.warn("User has exceeded usage limit for coupon: {}", coupon.getCode());
                 return CouponValidationResponse.builder()
                         .valid(false)
                         .message("Bạn đã sử dụng mã giảm giá này đủ số lần cho phép")
@@ -163,11 +193,16 @@ public class CouponService {
 
         // Check conditions
         Map<String, Object> conditions = convertJsonToConditions(coupon.getConditionsJson());
+        log.info("Coupon conditions: {}", conditions);
+        
         if (conditions != null) {
             // Check min spend
             if (conditions.containsKey("minSpend")) {
                 BigDecimal minSpend = new BigDecimal(conditions.get("minSpend").toString());
+                log.info("Checking min spend: {} vs order total: {}", minSpend, request.getOrderTotal());
+                
                 if (request.getOrderTotal().compareTo(minSpend) < 0) {
+                    log.warn("Order total {} is less than min spend {}", request.getOrderTotal(), minSpend);
                     return CouponValidationResponse.builder()
                             .valid(false)
                             .message(String.format("Đơn hàng tối thiểu %s để sử dụng mã này", minSpend))
@@ -179,6 +214,8 @@ public class CouponService {
         // Calculate discount
         BigDecimal discountAmount = calculateDiscount(coupon, request.getOrderTotal(), conditions);
         BigDecimal finalAmount = request.getOrderTotal().subtract(discountAmount);
+        
+        log.info("Coupon validation successful - Discount: {}, Final amount: {}", discountAmount, finalAmount);
 
         return CouponValidationResponse.builder()
                 .valid(true)
@@ -272,6 +309,7 @@ public class CouponService {
                         : null)
                 .isActive(coupon.isActive())
                 .isExpired(coupon.isExpired())
+                .showInBanner(coupon.getShowInBanner())
                 .build();
     }
 

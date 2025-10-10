@@ -64,6 +64,10 @@ public class Coupon extends BaseEntity {
     @Column(name = "expires_at")
     private OffsetDateTime expiresAt;
 
+    @Column(name = "show_in_banner")
+    @Builder.Default
+    private Boolean showInBanner = false;
+
     public boolean isExpired() {
         if (expiresAt == null) {
             return false;
