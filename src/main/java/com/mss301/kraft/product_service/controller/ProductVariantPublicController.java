@@ -5,14 +5,12 @@ import com.mss301.kraft.product_service.entity.Product;
 import com.mss301.kraft.product_service.repository.ProductRepository;
 import com.mss301.kraft.product_service.service.ProductVariantService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/products/slug/{slug}/variants")
-@PreAuthorize("permitAll()")
 public class ProductVariantPublicController {
 
     private final ProductRepository productRepository;

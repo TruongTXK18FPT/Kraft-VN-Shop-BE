@@ -7,10 +7,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/products")
-@PreAuthorize("permitAll()")
 public class ProductController {
 
     private final ProductService productService;
@@ -41,5 +41,18 @@ public class ProductController {
     @GetMapping("/slug/{slug}")
     public ResponseEntity<ProductResponse> getBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(productService.getBySlug(slug));
+    }
+
+    // Search products with filters
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductResponse>> searchProducts(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String collectionId,
+            @RequestParam(required = false) String categoryId) {
+        
+        UUID collectionUuid = collectionId != null ? UUID.fromString(collectionId) : null;
+        UUID categoryUuid = categoryId != null ? UUID.fromString(categoryId) : null;
+        
+        return ResponseEntity.ok(productService.searchProducts(query, collectionUuid, categoryUuid));
     }
 }

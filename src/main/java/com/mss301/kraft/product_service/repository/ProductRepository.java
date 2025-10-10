@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,4 +33,20 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     @EntityGraph(attributePaths = { "variants", "collection", "category" })
     java.util.Optional<Product> findBySlug(String slug);
+
+    @EntityGraph(attributePaths = { "variants", "collection", "category" })
+    @Query("SELECT DISTINCT p FROM Product p WHERE p.status = :status " +
+           "AND (:query IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "OR LOWER(p.brand) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+           "AND (:collectionId IS NULL OR p.collection.id = :collectionId) " +
+           "AND (:categoryId IS NULL OR p.category.id = :categoryId)")
+    List<Product> searchProducts(@Param("status") ProductStatus status,
+                                @Param("query") String query,
+                                @Param("collectionId") UUID collectionId,
+                                @Param("categoryId") UUID categoryId);
+    
+    // Dashboard analytics methods
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.createdAt < :date")
+    Long countByCreatedAtBefore(@Param("date") OffsetDateTime date);
 }

@@ -56,6 +56,11 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
     }
 
+    public List<ProductResponse> searchProducts(String query, UUID collectionId, UUID categoryId) {
+        return productRepository.searchProducts(ProductStatus.ACTIVE, query, collectionId, categoryId)
+                .stream().map(this::toResponse).toList();
+    }
+
     public ProductResponse create(ProductRequest req) {
         Product p = new Product();
         p.setName(req.getName());
