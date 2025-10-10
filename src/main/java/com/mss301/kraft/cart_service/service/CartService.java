@@ -107,6 +107,12 @@ public class CartService {
         int qty = request.getQty() == null ? item.getQty() : request.getQty();
         if (qty <= 0) {
             cartItemRepository.delete(item);
+            try {
+                if (cart.getItems() != null) {
+                    cart.getItems().removeIf(ci -> ci.getId().equals(item.getId()));
+                }
+            } catch (Exception ignored) {
+            }
         } else {
             int stock = item.getProductVariant().getStock() == null ? Integer.MAX_VALUE
                     : item.getProductVariant().getStock();
@@ -127,17 +133,14 @@ public class CartService {
             throw new IllegalArgumentException("Item not in cart");
         }
         cartItemRepository.delete(item);
-        recalcTotal(cart);
-        // Prevent JPA from trying to merge a stale items collection that still contains
-        // deleted proxies
         try {
             if (cart.getItems() != null) {
-                cart.getItems().clear();
+                cart.getItems().removeIf(ci -> ci.getId().equals(item.getId()));
             }
         } catch (Exception ignored) {
         }
-        cartRepository.save(cart);
-        return toResponse(cart);
+        recalcTotal(cart);
+        return toResponse(cartRepository.save(cart));
     }
 
     @Transactional

@@ -16,15 +16,18 @@ public class RegisterRequest {
     @NotBlank
     private String email;
 
+    @NotBlank
     private String phone;
 
     @NotBlank
     @Size(min = 8, max = 100)
     private String password;
 
-    // Optional structured address
-    private String fullName;
+    // Required address fields
+    @NotBlank
     private String province;
+
+    // Optional address fields
     private String district;
     private String ward;
     private String line1;

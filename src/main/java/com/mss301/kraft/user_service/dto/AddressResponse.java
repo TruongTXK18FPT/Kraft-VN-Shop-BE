@@ -13,8 +13,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AddressResponse {
     private UUID id;
-    private String fullName;
-    private String phone;
     private String province;
     private String district;
     private String ward;

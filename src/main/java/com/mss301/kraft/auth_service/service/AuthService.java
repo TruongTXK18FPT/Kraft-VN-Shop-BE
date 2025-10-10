@@ -62,13 +62,11 @@ public class AuthService {
         profile.setUser(user);
         userProfileRepository.save(profile);
 
-        // Create structured default address if provided
+        // Create structured default address if provided (no name/phone on Address)
         if (request.getLine1() != null || request.getProvince() != null || request.getDistrict() != null
                 || request.getWard() != null) {
             Address addr = new Address();
             addr.setUser(user);
-            addr.setFullName(request.getFullName() != null ? request.getFullName() : user.getName());
-            addr.setPhone(user.getPhone());
             addr.setProvince(request.getProvince());
             addr.setDistrict(request.getDistrict());
             addr.setWard(request.getWard());

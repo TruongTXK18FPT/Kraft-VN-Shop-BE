@@ -37,8 +37,6 @@ public class UserService {
                 for (Address a : addressRepository.findByUser(user)) {
                         addresses.add(new AddressResponse(
                                         a.getId(),
-                                        a.getFullName(),
-                                        a.getPhone(),
                                         a.getProvince(),
                                         a.getDistrict(),
                                         a.getWard(),
