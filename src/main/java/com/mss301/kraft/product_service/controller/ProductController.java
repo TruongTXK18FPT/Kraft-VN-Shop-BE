@@ -1,9 +1,10 @@
 package com.mss301.kraft.product_service.controller;
 
 import com.mss301.kraft.product_service.dto.ProductResponse;
+import com.mss301.kraft.product_service.dto.FacetResponse;
+import com.mss301.kraft.product_service.dto.ProductPageResponse;
 import com.mss301.kraft.product_service.service.ProductService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,12 +48,52 @@ public class ProductController {
     @GetMapping("/search")
     public ResponseEntity<List<ProductResponse>> searchProducts(
             @RequestParam(required = false) String query,
-            @RequestParam(required = false) String collectionId,
-            @RequestParam(required = false) String categoryId) {
-        
-        UUID collectionUuid = collectionId != null ? UUID.fromString(collectionId) : null;
-        UUID categoryUuid = categoryId != null ? UUID.fromString(categoryId) : null;
-        
-        return ResponseEntity.ok(productService.searchProducts(query, collectionUuid, categoryUuid));
+            @RequestParam(required = false, name = "collectionId") List<String> collectionIds,
+            @RequestParam(required = false, name = "categoryId") List<String> categoryIds) {
+
+        List<UUID> collectionUuids = collectionIds == null
+                ? java.util.List.of()
+                : collectionIds.stream().filter(java.util.Objects::nonNull).map(UUID::fromString).toList();
+        List<UUID> categoryUuids = categoryIds == null
+                ? java.util.List.of()
+                : categoryIds.stream().filter(java.util.Objects::nonNull).map(UUID::fromString).toList();
+
+        return ResponseEntity.ok(productService.searchProducts(query, collectionUuids, categoryUuids));
+    }
+
+    // Paged search (20 per page default)
+    @GetMapping("/search-paged")
+    public ResponseEntity<ProductPageResponse> searchProductsPaged(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false, name = "collectionId") List<String> collectionIds,
+            @RequestParam(required = false, name = "categoryId") List<String> categoryIds,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        List<UUID> collectionUuids = collectionIds == null
+                ? java.util.List.of()
+                : collectionIds.stream().filter(java.util.Objects::nonNull).map(UUID::fromString).toList();
+        List<UUID> categoryUuids = categoryIds == null
+                ? java.util.List.of()
+                : categoryIds.stream().filter(java.util.Objects::nonNull).map(UUID::fromString).toList();
+        return ResponseEntity.ok(productService.searchProductsPaged(query, collectionUuids, categoryUuids, page, size));
+    }
+
+    @GetMapping("/facets")
+    public ResponseEntity<FacetResponse> facetCounts(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false, name = "collectionId") List<String> collectionIds,
+            @RequestParam(required = false, name = "categoryId") List<String> categoryIds) {
+
+        List<UUID> collectionUuids = collectionIds == null
+                ? java.util.List.of()
+                : collectionIds.stream().filter(java.util.Objects::nonNull).map(UUID::fromString).toList();
+        List<UUID> categoryUuids = categoryIds == null
+                ? java.util.List.of()
+                : categoryIds.stream().filter(java.util.Objects::nonNull).map(UUID::fromString).toList();
+
+        FacetResponse response = new FacetResponse();
+        response.setCollections(productService.facetCollections(query, categoryUuids));
+        response.setCategories(productService.facetCategories(query, collectionUuids));
+        return ResponseEntity.ok(response);
     }
 }

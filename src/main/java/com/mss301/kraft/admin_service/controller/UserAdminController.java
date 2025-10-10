@@ -26,6 +26,13 @@ public class UserAdminController {
         return ResponseEntity.ok(userAdminService.listUsers());
     }
 
+    @GetMapping("/paged")
+    public ResponseEntity<com.mss301.kraft.admin_service.dto.UserAdminPageResponse> listPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(userAdminService.listUsersPaged(page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserSummary> get(@PathVariable UUID id) {
         return ResponseEntity.ok(userAdminService.getUser(id));

@@ -29,6 +29,14 @@ public class CollectionAdminController {
         return ResponseEntity.ok(collectionAdminService.list());
     }
 
+    @GetMapping("/paged")
+    @Operation(summary = "Get paged collections")
+    public ResponseEntity<com.mss301.kraft.admin_service.dto.CollectionPageResponse> listPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(collectionAdminService.listPaged(page, size));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get collection by ID")
     public ResponseEntity<CollectionResponse> get(@PathVariable UUID id) {

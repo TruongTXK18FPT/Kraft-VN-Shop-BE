@@ -2,6 +2,8 @@ package com.mss301.kraft.product_service.service;
 
 import com.mss301.kraft.product_service.dto.ProductRequest;
 import com.mss301.kraft.product_service.dto.ProductResponse;
+import com.mss301.kraft.product_service.dto.ProductPageResponse;
+import com.mss301.kraft.product_service.dto.FacetItem;
 import com.mss301.kraft.product_service.entity.Category;
 import com.mss301.kraft.product_service.entity.Collection;
 import com.mss301.kraft.product_service.entity.Product;
@@ -10,6 +12,9 @@ import com.mss301.kraft.product_service.repository.CategoryRepository;
 import com.mss301.kraft.product_service.repository.CollectionRepository;
 import com.mss301.kraft.product_service.repository.ProductRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -56,9 +61,70 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
     }
 
-    public List<ProductResponse> searchProducts(String query, UUID collectionId, UUID categoryId) {
-        return productRepository.searchProducts(ProductStatus.ACTIVE, query, collectionId, categoryId)
-                .stream().map(this::toResponse).toList();
+    public List<ProductResponse> searchProducts(String query, List<UUID> collectionIds, List<UUID> categoryIds) {
+        List<UUID> safeCollectionIds = collectionIds == null ? java.util.List.of() : collectionIds;
+        List<UUID> safeCategoryIds = categoryIds == null ? java.util.List.of() : categoryIds;
+        boolean collectionIdsEmpty = safeCollectionIds.isEmpty();
+        boolean categoryIdsEmpty = safeCategoryIds.isEmpty();
+        String q = query == null || query.isBlank() ? null : "%" + query.toLowerCase() + "%";
+        return productRepository
+                .searchProducts(ProductStatus.ACTIVE, q, safeCollectionIds, safeCategoryIds, collectionIdsEmpty,
+                        categoryIdsEmpty)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public ProductPageResponse searchProductsPaged(String query,
+            List<UUID> collectionIds, List<UUID> categoryIds, int page, int size) {
+        List<UUID> safeCollectionIds = collectionIds == null ? java.util.List.of() : collectionIds;
+        List<UUID> safeCategoryIds = categoryIds == null ? java.util.List.of() : categoryIds;
+        boolean collectionIdsEmpty = safeCollectionIds.isEmpty();
+        boolean categoryIdsEmpty = safeCategoryIds.isEmpty();
+        Pageable pageable = PageRequest.of(page, size);
+        String q = query == null || query.isBlank() ? null : "%" + query.toLowerCase() + "%";
+        Page<Product> result = productRepository
+                .searchProductsPaged(ProductStatus.ACTIVE, q, safeCollectionIds, safeCategoryIds,
+                        collectionIdsEmpty, categoryIdsEmpty, pageable);
+        ProductPageResponse resp = new ProductPageResponse();
+        resp.setItems(result.getContent().stream().map(this::toResponse).toList());
+        resp.setPage(result.getNumber());
+        resp.setSize(result.getSize());
+        resp.setTotalElements(result.getTotalElements());
+        resp.setTotalPages(result.getTotalPages());
+        return resp;
+    }
+
+    public List<FacetItem> facetCollections(String query, List<UUID> categoryIds) {
+        List<UUID> safeCategoryIds = categoryIds == null ? java.util.List.of() : categoryIds;
+        boolean categoryIdsEmpty = safeCategoryIds.isEmpty();
+        String q = query == null || query.isBlank() ? null : "%" + query.toLowerCase() + "%";
+        List<Object[]> rows = productRepository
+                .facetCountsByCollection(ProductStatus.ACTIVE, q, safeCategoryIds, categoryIdsEmpty);
+        List<FacetItem> items = new java.util.ArrayList<>();
+        for (Object[] row : rows) {
+            java.util.UUID id = (java.util.UUID) row[0];
+            String name = (String) row[1];
+            Long cnt = (Long) row[2];
+            items.add(new FacetItem(id, name, cnt));
+        }
+        return items;
+    }
+
+    public List<FacetItem> facetCategories(String query, List<UUID> collectionIds) {
+        List<UUID> safeCollectionIds = collectionIds == null ? java.util.List.of() : collectionIds;
+        boolean collectionIdsEmpty = safeCollectionIds.isEmpty();
+        String q = query == null || query.isBlank() ? null : "%" + query.toLowerCase() + "%";
+        List<Object[]> rows = productRepository
+                .facetCountsByCategory(ProductStatus.ACTIVE, q, safeCollectionIds, collectionIdsEmpty);
+        List<FacetItem> items = new java.util.ArrayList<>();
+        for (Object[] row : rows) {
+            java.util.UUID id = (java.util.UUID) row[0];
+            String name = (String) row[1];
+            Long cnt = (Long) row[2];
+            items.add(new FacetItem(id, name, cnt));
+        }
+        return items;
     }
 
     public ProductResponse create(ProductRequest req) {

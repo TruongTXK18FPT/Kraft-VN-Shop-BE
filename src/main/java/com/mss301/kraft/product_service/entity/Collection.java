@@ -3,6 +3,7 @@ package com.mss301.kraft.product_service.entity;
 import com.mss301.kraft.common.BaseEntity;
 import com.mss301.kraft.common.SlugUtils;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,6 +31,7 @@ public class Collection extends BaseEntity {
     private String imageUrl;
 
     @OneToMany(mappedBy = "collection", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Product> products = new ArrayList<>();
 
     @PrePersist

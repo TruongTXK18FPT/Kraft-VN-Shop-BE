@@ -26,6 +26,13 @@ public class ProductAdminController {
         return ResponseEntity.ok(productAdminService.list());
     }
 
+    @GetMapping("/paged")
+    public ResponseEntity<com.mss301.kraft.admin_service.dto.ProductPageResponse> listPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(productAdminService.listPaged(page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> get(@PathVariable UUID id) {
         return ResponseEntity.ok(productAdminService.get(id));

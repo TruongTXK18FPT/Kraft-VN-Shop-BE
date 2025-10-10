@@ -30,6 +30,13 @@ public class OrderAdminController {
         return ResponseEntity.ok(orders);
     }
 
+    @GetMapping("/paged")
+    public ResponseEntity<com.mss301.kraft.admin_service.dto.OrderAdminPageResponse> getAllOrdersPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(orderAdminService.getAllOrdersPaged(page, size));
+    }
+
     /**
      * Get order by ID (admin only)
      */

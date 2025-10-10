@@ -26,6 +26,13 @@ public class BlogAdminController {
         return ResponseEntity.ok(blogService.listAll());
     }
 
+    @GetMapping("/paged")
+    public ResponseEntity<com.mss301.kraft.admin_service.dto.BlogPageResponse> listPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(blogService.listAllPaged(page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<BlogResponse> get(@PathVariable UUID id) {
         return ResponseEntity.ok(blogService.get(id));

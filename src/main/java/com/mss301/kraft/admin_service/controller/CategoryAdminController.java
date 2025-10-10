@@ -29,6 +29,14 @@ public class CategoryAdminController {
         return ResponseEntity.ok(categoryAdminService.list());
     }
 
+    @GetMapping("/paged")
+    @Operation(summary = "Get paged categories")
+    public ResponseEntity<com.mss301.kraft.admin_service.dto.CategoryPageResponse> listPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(categoryAdminService.listPaged(page, size));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get category by ID")
     public ResponseEntity<CategoryResponse> get(@PathVariable UUID id) {

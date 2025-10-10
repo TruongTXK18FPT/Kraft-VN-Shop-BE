@@ -10,6 +10,8 @@ import com.mss301.kraft.product_service.repository.CollectionRepository;
 import com.mss301.kraft.product_service.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +34,19 @@ public class ProductAdminService {
     @Transactional(readOnly = true)
     public List<ProductResponse> list() {
         return productRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public com.mss301.kraft.admin_service.dto.ProductPageResponse listPaged(int page, int size) {
+        Page<com.mss301.kraft.product_service.entity.Product> result = productRepository
+                .findAll(PageRequest.of(page, size));
+        com.mss301.kraft.admin_service.dto.ProductPageResponse resp = new com.mss301.kraft.admin_service.dto.ProductPageResponse();
+        resp.setItems(result.getContent().stream().map(this::toResponse).toList());
+        resp.setPage(result.getNumber());
+        resp.setSize(result.getSize());
+        resp.setTotalElements(result.getTotalElements());
+        resp.setTotalPages(result.getTotalPages());
+        return resp;
     }
 
     @Transactional(readOnly = true)

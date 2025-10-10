@@ -26,6 +26,13 @@ public class SliderAdminController {
         return ResponseEntity.ok(sliderAdminService.list());
     }
 
+    @GetMapping("/paged")
+    public ResponseEntity<com.mss301.kraft.admin_service.dto.SliderPageResponse> listPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(sliderAdminService.listPaged(page, size));
+    }
+
     @GetMapping("/active")
     @PreAuthorize("permitAll()")
     public ResponseEntity<List<SliderResponse>> listActive() {
@@ -53,4 +60,3 @@ public class SliderAdminController {
         return ResponseEntity.noContent().build();
     }
 }
-

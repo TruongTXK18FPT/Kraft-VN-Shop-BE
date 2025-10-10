@@ -1,6 +1,7 @@
 package com.mss301.kraft.admin_service.service;
 
 import com.mss301.kraft.admin_service.dto.OrderAdminResponse;
+import com.mss301.kraft.admin_service.dto.OrderAdminPageResponse;
 import com.mss301.kraft.common.enums.OrderStatus;
 import com.mss301.kraft.common.enums.PaymentStatus;
 import com.mss301.kraft.order_service.dto.OrderItemResponse;
@@ -30,9 +31,19 @@ public class OrderAdminService {
      */
     public List<OrderAdminResponse> getAllOrders() {
         List<Order> orders = orderRepository.findAllOrders();
-        return orders.stream()
-                .map(this::toOrderAdminResponse)
-                .collect(Collectors.toList());
+        return orders.stream().map(this::toOrderAdminResponse).collect(Collectors.toList());
+    }
+
+    public OrderAdminPageResponse getAllOrdersPaged(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Order> result = orderRepository.findAllOrdersPaged(pageable);
+        OrderAdminPageResponse resp = new OrderAdminPageResponse();
+        resp.setItems(result.getContent().stream().map(this::toOrderAdminResponse).collect(Collectors.toList()));
+        resp.setPage(result.getNumber());
+        resp.setSize(result.getSize());
+        resp.setTotalElements(result.getTotalElements());
+        resp.setTotalPages(result.getTotalPages());
+        return resp;
     }
 
     /**

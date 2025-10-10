@@ -7,6 +7,8 @@ import com.mss301.kraft.product_service.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +28,18 @@ public class CategoryAdminService {
     }
 
     @Transactional(readOnly = true)
+    public com.mss301.kraft.admin_service.dto.CategoryPageResponse listPaged(int page, int size) {
+        Page<Category> result = categoryRepository.findAll(PageRequest.of(page, size));
+        com.mss301.kraft.admin_service.dto.CategoryPageResponse resp = new com.mss301.kraft.admin_service.dto.CategoryPageResponse();
+        resp.setItems(result.getContent().stream().map(this::toResponse).toList());
+        resp.setPage(result.getNumber());
+        resp.setSize(result.getSize());
+        resp.setTotalElements(result.getTotalElements());
+        resp.setTotalPages(result.getTotalPages());
+        return resp;
+    }
+
+    @Transactional(readOnly = true)
     public CategoryResponse get(UUID id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
@@ -40,7 +54,7 @@ public class CategoryAdminService {
 
         Category category = new Category();
         category.setName(request.getName());
-        
+
         if (request.getParentId() != null) {
             Category parent = categoryRepository.findById(request.getParentId())
                     .orElseThrow(() -> new IllegalArgumentException("Parent category not found"));
@@ -57,7 +71,7 @@ public class CategoryAdminService {
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
         category.setName(request.getName());
-        
+
         if (request.getParentId() != null) {
             Category parent = categoryRepository.findById(request.getParentId())
                     .orElseThrow(() -> new IllegalArgumentException("Parent category not found"));

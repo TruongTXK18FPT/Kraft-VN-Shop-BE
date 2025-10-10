@@ -5,6 +5,7 @@ import com.mss301.kraft.admin_service.dto.SliderDtos.SliderResponse;
 import com.mss301.kraft.cms_service.Slider;
 import com.mss301.kraft.cms_service.SliderRepository;
 import org.springframework.stereotype.Service;
+import com.mss301.kraft.admin_service.dto.SliderPageResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +21,18 @@ public class SliderAdminService {
 
     public List<SliderResponse> list() {
         return sliderRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    public SliderPageResponse listPaged(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Slider> result = sliderRepository.findAllByOrderByCreatedAtDesc(pageable);
+        SliderPageResponse resp = new SliderPageResponse();
+        resp.setItems(result.getContent().stream().map(this::toResponse).toList());
+        resp.setPage(result.getNumber());
+        resp.setSize(result.getSize());
+        resp.setTotalElements(result.getTotalElements());
+        resp.setTotalPages(result.getTotalPages());
+        return resp;
     }
 
     public List<SliderResponse> listActive() {
@@ -76,4 +89,3 @@ public class SliderAdminService {
                 s.getCtaLabel(), s.getCtaLink(), s.getPosition(), s.isActive());
     }
 }
-

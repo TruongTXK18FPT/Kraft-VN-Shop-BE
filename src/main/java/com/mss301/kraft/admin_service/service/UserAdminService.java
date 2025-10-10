@@ -4,6 +4,7 @@ import com.mss301.kraft.admin_service.dto.UserAdminDtos.ToggleActiveRequest;
 import com.mss301.kraft.admin_service.dto.UserAdminDtos.UserSummary;
 import com.mss301.kraft.common.enums.Role;
 import com.mss301.kraft.user_service.entity.User;
+import com.mss301.kraft.admin_service.dto.UserAdminPageResponse;
 import com.mss301.kraft.order_service.repository.OrderRepository;
 import com.mss301.kraft.user_service.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,18 @@ public class UserAdminService {
     public List<UserSummary> listUsers() {
         return userRepository.findAllByRoleAndActiveIsNotNullOrderByCreatedAtDesc(Role.USER)
                 .stream().map(this::toSummary).toList();
+    }
+
+    public UserAdminPageResponse listUsersPaged(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<User> result = userRepository.findAllByRolePaged(Role.USER, pageable);
+        UserAdminPageResponse resp = new UserAdminPageResponse();
+        resp.setItems(result.getContent().stream().map(this::toSummary).toList());
+        resp.setPage(result.getNumber());
+        resp.setSize(result.getSize());
+        resp.setTotalElements(result.getTotalElements());
+        resp.setTotalPages(result.getTotalPages());
+        return resp;
     }
 
     public UserSummary getUser(UUID id) {

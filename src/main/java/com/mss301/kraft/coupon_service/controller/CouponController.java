@@ -46,6 +46,15 @@ public class CouponController {
         return ResponseEntity.ok(responses);
     }
 
+    @GetMapping("/paged")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get paged coupons (Admin only)")
+    public ResponseEntity<com.mss301.kraft.admin_service.dto.CouponPageResponse> getAllCouponsPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(couponService.getAllCouponsPaged(page, size));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update coupon (Admin only)")

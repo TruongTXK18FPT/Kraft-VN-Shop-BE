@@ -7,6 +7,8 @@ import com.mss301.kraft.cms_service.repository.BlogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.ZoneId;
 import java.util.List;
@@ -25,6 +27,18 @@ public class BlogService {
         return blogRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public com.mss301.kraft.admin_service.dto.BlogPageResponse listAllPaged(int page, int size) {
+        Page<Blog> result = blogRepository.findAll(PageRequest.of(page, size));
+        com.mss301.kraft.admin_service.dto.BlogPageResponse resp = new com.mss301.kraft.admin_service.dto.BlogPageResponse();
+        resp.setItems(result.getContent().stream().map(this::toResponse).toList());
+        resp.setPage(result.getNumber());
+        resp.setSize(result.getSize());
+        resp.setTotalElements(result.getTotalElements());
+        resp.setTotalPages(result.getTotalPages());
+        return resp;
     }
 
     @Transactional(readOnly = true)
@@ -50,7 +64,7 @@ public class BlogService {
                 .tags(request.getTags())
                 .viewCount(0)
                 .build();
-        
+
         blog = blogRepository.save(blog);
         return toResponse(blog);
     }
@@ -60,17 +74,28 @@ public class BlogService {
         Blog blog = blogRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Blog not found"));
 
-        if (request.getTitle() != null) blog.setTitle(request.getTitle());
-        if (request.getSlug() != null) blog.setSlug(request.getSlug());
-        if (request.getExcerpt() != null) blog.setExcerpt(request.getExcerpt());
-        if (request.getContent() != null) blog.setContent(request.getContent());
-        if (request.getCategory() != null) blog.setCategory(request.getCategory());
-        if (request.getImageUrl() != null) blog.setImageUrl(request.getImageUrl());
-        if (request.getAuthor() != null) blog.setAuthor(request.getAuthor());
-        if (request.getReadTime() != null) blog.setReadTime(request.getReadTime());
-        if (request.getFeatured() != null) blog.setFeatured(request.getFeatured());
-        if (request.getPublished() != null) blog.setPublished(request.getPublished());
-        if (request.getTags() != null) blog.setTags(request.getTags());
+        if (request.getTitle() != null)
+            blog.setTitle(request.getTitle());
+        if (request.getSlug() != null)
+            blog.setSlug(request.getSlug());
+        if (request.getExcerpt() != null)
+            blog.setExcerpt(request.getExcerpt());
+        if (request.getContent() != null)
+            blog.setContent(request.getContent());
+        if (request.getCategory() != null)
+            blog.setCategory(request.getCategory());
+        if (request.getImageUrl() != null)
+            blog.setImageUrl(request.getImageUrl());
+        if (request.getAuthor() != null)
+            blog.setAuthor(request.getAuthor());
+        if (request.getReadTime() != null)
+            blog.setReadTime(request.getReadTime());
+        if (request.getFeatured() != null)
+            blog.setFeatured(request.getFeatured());
+        if (request.getPublished() != null)
+            blog.setPublished(request.getPublished());
+        if (request.getTags() != null)
+            blog.setTags(request.getTags());
 
         blog = blogRepository.save(blog);
         return toResponse(blog);
@@ -107,11 +132,11 @@ public class BlogService {
     public BlogResponse getBySlug(String slug) {
         Blog blog = blogRepository.findBySlug(slug)
                 .orElseThrow(() -> new IllegalArgumentException("Blog not found"));
-        
+
         // Increment view count
         blog.setViewCount(blog.getViewCount() + 1);
         blog = blogRepository.save(blog);
-        
+
         return toResponse(blog);
     }
 
@@ -139,10 +164,12 @@ public class BlogService {
                 .published(blog.getPublished())
                 .tags(blog.getTags())
                 .viewCount(blog.getViewCount())
-                .createdAt(blog.getCreatedAt() != null ? 
-                    blog.getCreatedAt().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime() : null)
-                .updatedAt(blog.getUpdatedAt() != null ? 
-                    blog.getUpdatedAt().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime() : null)
+                .createdAt(blog.getCreatedAt() != null
+                        ? blog.getCreatedAt().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
+                        : null)
+                .updatedAt(blog.getUpdatedAt() != null
+                        ? blog.getUpdatedAt().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
+                        : null)
                 .build();
     }
 }
