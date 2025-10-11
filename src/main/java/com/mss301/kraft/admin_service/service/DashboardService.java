@@ -29,13 +29,13 @@ public class DashboardService {
         Long totalUsers = userRepository.count();
         Long totalProducts = productRepository.count();
         Long totalOrders = orderRepository.count();
-        
+
         // Calculate total revenue from all completed orders
         BigDecimal totalRevenue = orderRepository.sumTotalRevenue();
         if (totalRevenue == null) {
             totalRevenue = BigDecimal.ZERO;
         }
-        
+
         // Calculate growth rates (comparing with previous period)
         OffsetDateTime monthAgo = OffsetDateTime.now().minusMonths(1);
         Long usersMonthAgo = userRepository.countByCreatedAtBefore(monthAgo);
@@ -45,24 +45,24 @@ public class DashboardService {
         if (revenueMonthAgo == null) {
             revenueMonthAgo = BigDecimal.ZERO;
         }
-        
+
         Double userGrowth = calculateGrowthRate(usersMonthAgo, totalUsers);
         Double productGrowth = calculateGrowthRate(productsMonthAgo, totalProducts);
         Double orderGrowth = calculateGrowthRate(ordersMonthAgo, totalOrders);
         Double revenueGrowth = calculateGrowthRate(revenueMonthAgo.doubleValue(), totalRevenue.doubleValue());
-        
+
         // Today's visitors (mock data - would need analytics service)
         Long todayVisitors = 1240L;
-        
+
         // Generate sales data for last 12 months
         List<DashboardAnalyticsResponse.SalesDataPoint> salesData = generateSalesData();
-        
+
         // Generate product sales distribution
         List<DashboardAnalyticsResponse.ProductSalesData> productSalesData = generateProductSalesData(totalRevenue);
-        
+
         // Generate visitor data for last 7 days
         List<DashboardAnalyticsResponse.VisitorData> visitorData = generateVisitorData();
-        
+
         return DashboardAnalyticsResponse.builder()
                 .totalUsers(totalUsers)
                 .totalProducts(totalProducts)
@@ -78,135 +78,147 @@ public class DashboardService {
                 .visitorData(visitorData)
                 .build();
     }
-    
+
     private Double calculateGrowthRate(Long oldValue, Long newValue) {
-        if (oldValue == null || oldValue == 0) return 0.0;
+        if (oldValue == null || oldValue == 0)
+            return 0.0;
         return ((newValue - oldValue) * 100.0) / oldValue;
     }
-    
+
     private Double calculateGrowthRate(Double oldValue, Double newValue) {
-        if (oldValue == null || oldValue == 0) return 0.0;
+        if (oldValue == null || oldValue == 0)
+            return 0.0;
         return ((newValue - oldValue) * 100.0) / oldValue;
     }
-    
+
     private List<DashboardAnalyticsResponse.SalesDataPoint> generateSalesData() {
         List<DashboardAnalyticsResponse.SalesDataPoint> data = new ArrayList<>();
         LocalDate now = LocalDate.now();
-        
+
         for (int i = 11; i >= 0; i--) {
             LocalDate month = now.minusMonths(i);
-            OffsetDateTime startOfMonth = month.withDayOfMonth(1).atStartOfDay().atOffset(OffsetDateTime.now().getOffset());
-            OffsetDateTime endOfMonth = month.withDayOfMonth(month.lengthOfMonth()).atTime(23, 59, 59).atOffset(OffsetDateTime.now().getOffset());
-            
+            OffsetDateTime startOfMonth = month.withDayOfMonth(1).atStartOfDay()
+                    .atOffset(OffsetDateTime.now().getOffset());
+            OffsetDateTime endOfMonth = month.withDayOfMonth(month.lengthOfMonth()).atTime(23, 59, 59)
+                    .atOffset(OffsetDateTime.now().getOffset());
+
             // Get actual data from database
             BigDecimal monthlySales = orderRepository.sumRevenueBetween(startOfMonth, endOfMonth);
             Long monthlyOrders = orderRepository.countByCreatedAtBetween(startOfMonth, endOfMonth);
-            
-            if (monthlySales == null) monthlySales = BigDecimal.ZERO;
-            if (monthlyOrders == null) monthlyOrders = 0L;
-            
+
+            if (monthlySales == null)
+                monthlySales = BigDecimal.ZERO;
+            if (monthlyOrders == null)
+                monthlyOrders = 0L;
+
             String monthName = "T" + month.getMonthValue();
-            
+
             data.add(DashboardAnalyticsResponse.SalesDataPoint.builder()
                     .month(monthName)
                     .sales(monthlySales)
                     .orders(monthlyOrders)
                     .build());
         }
-        
+
         return data;
     }
-    
+
     private List<DashboardAnalyticsResponse.ProductSalesData> generateProductSalesData(BigDecimal totalRevenue) {
         List<DashboardAnalyticsResponse.ProductSalesData> data = new ArrayList<>();
-        
+
         try {
             // Get real product revenue data from orders
             List<ProductRevenueData> productRevenues = getProductRevenueData();
-            
+
             if (productRevenues.isEmpty()) {
                 // Return empty list if no real data available
                 return new ArrayList<>();
             }
-            
+
             // Convert to dashboard format
             for (ProductRevenueData productRevenue : productRevenues) {
-                BigDecimal percentage = totalRevenue.compareTo(BigDecimal.ZERO) > 0 
-                    ? productRevenue.getRevenue().multiply(new BigDecimal("100")).divide(totalRevenue, 2, RoundingMode.HALF_UP)
-                    : BigDecimal.ZERO;
-                
+                BigDecimal percentage = totalRevenue.compareTo(BigDecimal.ZERO) > 0
+                        ? productRevenue.getRevenue().multiply(new BigDecimal("100")).divide(totalRevenue, 2,
+                                RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO;
+
                 data.add(DashboardAnalyticsResponse.ProductSalesData.builder()
                         .name(productRevenue.getCollectionName())
                         .value(percentage.doubleValue())
                         .sales(productRevenue.getRevenue())
                         .build());
             }
-            
+
         } catch (Exception e) {
-            System.err.println("Error generating product sales data: " + e.getMessage());
             // Return empty list instead of mock data
             return new ArrayList<>();
         }
-        
+
         return data;
     }
-    
+
     private List<ProductRevenueData> getProductRevenueData() {
         try {
             // Query actual order data grouped by product collection
             List<Object[]> results = orderRepository.findProductRevenueByCollection();
             List<ProductRevenueData> data = new ArrayList<>();
-            
+
             for (Object[] result : results) {
                 String collectionName = (String) result[0];
                 BigDecimal revenue = (BigDecimal) result[1];
                 Long orderCount = (Long) result[2];
-                
+
                 data.add(ProductRevenueData.builder()
                         .collectionName(collectionName)
                         .revenue(revenue)
                         .orderCount(orderCount)
                         .build());
             }
-            
+
             return data;
         } catch (Exception e) {
-            System.err.println("Error getting product revenue data: " + e.getMessage());
             return new ArrayList<>();
         }
     }
-    
-    
+
     private List<DashboardAnalyticsResponse.VisitorData> generateVisitorData() {
         List<DashboardAnalyticsResponse.VisitorData> data = new ArrayList<>();
         LocalDate now = LocalDate.now();
         Random random = new Random(now.toEpochDay()); // Seed for consistency
-        
+
         for (int i = 6; i >= 0; i--) {
             LocalDate day = now.minusDays(i);
             String dayName = getDayName(day);
             Long visitors = 800L + random.nextInt(850);
-            
+
             data.add(DashboardAnalyticsResponse.VisitorData.builder()
                     .day(dayName)
                     .visitors(visitors)
                     .build());
         }
-        
+
         return data;
     }
-    
+
     private String getDayName(LocalDate date) {
         int dayOfWeek = date.getDayOfWeek().getValue();
         switch (dayOfWeek) {
-            case 1: return "T2";
-            case 2: return "T3";
-            case 3: return "T4";
-            case 4: return "T5";
-            case 5: return "T6";
-            case 6: return "T7";
-            case 7: return "CN";
-            default: return "";
+            case 1:
+                return "T2";
+            case 2:
+                return "T3";
+            case 3:
+                return "T4";
+            case 4:
+                return "T5";
+            case 5:
+                return "T6";
+            case 6:
+                return "T7";
+            case 7:
+                return "CN";
+            default:
+                return "";
         }
     }
 }

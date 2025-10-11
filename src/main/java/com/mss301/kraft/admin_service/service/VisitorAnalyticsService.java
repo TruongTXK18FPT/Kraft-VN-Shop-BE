@@ -25,10 +25,10 @@ public class VisitorAnalyticsService {
     public void trackVisitor(String userAgent, String ipAddress, String country, String deviceType) {
         try {
             LocalDate today = LocalDate.now();
-            
+
             // Check if this IP already visited today
             boolean isUniqueToday = !visitorAnalyticsRepository.existsByIpAddressAndVisitDate(ipAddress, today);
-            
+
             VisitorAnalytics analytics = VisitorAnalytics.builder()
                     .visitDate(today)
                     .ipAddress(ipAddress)
@@ -39,7 +39,7 @@ public class VisitorAnalyticsService {
                     .build();
 
             visitorAnalyticsRepository.save(analytics);
-            
+
             log.debug("Tracked visitor from IP: {} on {}", ipAddress, today);
         } catch (Exception e) {
             log.error("Error tracking visitor", e);
@@ -51,10 +51,10 @@ public class VisitorAnalyticsService {
         try {
             String ipAddress = getClientIpAddress(request);
             LocalDate today = LocalDate.now();
-            
+
             // Check if this IP already visited today
             boolean isUniqueToday = !visitorAnalyticsRepository.existsByIpAddressAndVisitDate(ipAddress, today);
-            
+
             VisitorAnalytics analytics = VisitorAnalytics.builder()
                     .visitDate(today)
                     .ipAddress(ipAddress)
@@ -69,7 +69,7 @@ public class VisitorAnalyticsService {
                     .build();
 
             visitorAnalyticsRepository.save(analytics);
-            
+
             log.debug("Tracked visit from IP: {} on {}", ipAddress, today);
         } catch (Exception e) {
             log.error("Error tracking visit", e);
@@ -87,14 +87,14 @@ public class VisitorAnalyticsService {
     public VisitorAnalyticsResponse getVisitorStats(int days) {
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(days - 1);
-        
+
         // Get today's stats
         VisitorAnalyticsResponse.TodayStats todayStats = VisitorAnalyticsResponse.TodayStats.builder()
                 .uniqueVisitors(getTodayUniqueVisitors().intValue())
                 .totalVisits(getTodayTotalVisits().intValue())
                 .date(endDate.toString())
                 .build();
-        
+
         // Get device type stats
         List<VisitorAnalyticsResponse.DeviceTypeStats> deviceTypes = getDeviceTypeStats(startDate, endDate)
                 .stream()
@@ -103,7 +103,7 @@ public class VisitorAnalyticsService {
                         .visitors((Integer) stat.get("visitors"))
                         .build())
                 .collect(Collectors.toList());
-        
+
         // Get country stats
         List<VisitorAnalyticsResponse.CountryStats> countries = getCountryStats(startDate, endDate)
                 .stream()
@@ -112,9 +112,10 @@ public class VisitorAnalyticsService {
                         .visitors((Integer) stat.get("visitors"))
                         .build())
                 .collect(Collectors.toList());
-        
+
         // Get daily stats
-        List<VisitorAnalyticsResponse.DailyStats> dailyStats = visitorAnalyticsRepository.getVisitorStatsBetween(startDate, endDate)
+        List<VisitorAnalyticsResponse.DailyStats> dailyStats = visitorAnalyticsRepository
+                .getVisitorStatsBetween(startDate, endDate)
                 .stream()
                 .map(stat -> VisitorAnalyticsResponse.DailyStats.builder()
                         .date(stat[0].toString())
@@ -122,7 +123,7 @@ public class VisitorAnalyticsService {
                         .totalVisits(((Number) stat[2]).intValue())
                         .build())
                 .collect(Collectors.toList());
-        
+
         return VisitorAnalyticsResponse.builder()
                 .todayStats(todayStats)
                 .deviceTypes(deviceTypes)
@@ -133,39 +134,26 @@ public class VisitorAnalyticsService {
 
     public Map<String, Object> getVisitorStatsForPeriod(LocalDate startDate, LocalDate endDate) {
         List<Object[]> stats = visitorAnalyticsRepository.getVisitorStatsBetween(startDate, endDate);
-        
+
         return Map.of(
-            "uniqueVisitors", visitorAnalyticsRepository.countUniqueVisitorsBetween(startDate, endDate),
-            "totalVisits", visitorAnalyticsRepository.countTotalVisitsBetween(startDate, endDate),
-            "dailyStats", stats.stream().map(stat -> Map.of(
-                "date", stat[0],
-                "uniqueVisitors", stat[1],
-                "totalVisits", stat[2]
-            )).collect(Collectors.toList())
-        );
+                "uniqueVisitors", visitorAnalyticsRepository.countUniqueVisitorsBetween(startDate, endDate),
+                "totalVisits", visitorAnalyticsRepository.countTotalVisitsBetween(startDate, endDate),
+                "dailyStats", stats.stream().map(stat -> Map.of(
+                        "date", stat[0],
+                        "uniqueVisitors", stat[1],
+                        "totalVisits", stat[2])).collect(Collectors.toList()));
     }
 
     public List<Map<String, Object>> getDeviceTypeStats(LocalDate startDate, LocalDate endDate) {
         try {
-            System.out.println("DEBUG: Getting device type stats from " + startDate + " to " + endDate);
             List<Object[]> results = visitorAnalyticsRepository.getDeviceTypeStats(startDate, endDate);
-            System.out.println("DEBUG: Device type stats query results: " + results.size() + " records");
-            
-            List<Map<String, Object>> mapped = results.stream()
-                    .map(stat -> {
-                        System.out.println("DEBUG: Mapping device type result: " + stat[0] + " -> " + stat[1]);
-                        return Map.of(
+
+            return results.stream()
+                    .map(stat -> Map.of(
                             "deviceType", stat[0] != null ? stat[0] : "Unknown",
-                            "visitors", stat[1]
-                        );
-                    })
+                            "visitors", stat[1]))
                     .collect(Collectors.toList());
-            
-            System.out.println("DEBUG: Mapped device type stats: " + mapped);
-            return mapped;
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to get device type stats: " + e.getMessage());
-            e.printStackTrace();
             throw e;
         }
     }
@@ -174,9 +162,8 @@ public class VisitorAnalyticsService {
         return visitorAnalyticsRepository.getCountryStats(startDate, endDate)
                 .stream()
                 .map(stat -> Map.of(
-                    "country", stat[0],
-                    "visitors", stat[1]
-                ))
+                        "country", stat[0],
+                        "visitors", stat[1]))
                 .collect(Collectors.toList());
     }
 
@@ -185,18 +172,19 @@ public class VisitorAnalyticsService {
         if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
             return xForwardedFor.split(",")[0].trim();
         }
-        
+
         String xRealIp = request.getHeader("X-Real-IP");
         if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
             return xRealIp;
         }
-        
+
         return request.getRemoteAddr();
     }
 
     private String detectDeviceType(String userAgent) {
-        if (userAgent == null) return "Unknown";
-        
+        if (userAgent == null)
+            return "Unknown";
+
         String ua = userAgent.toLowerCase();
         if (ua.contains("mobile") || ua.contains("android") || ua.contains("iphone")) {
             return "Mobile";
@@ -208,39 +196,51 @@ public class VisitorAnalyticsService {
     }
 
     private String detectBrowser(String userAgent) {
-        if (userAgent == null) return "Unknown";
-        
+        if (userAgent == null)
+            return "Unknown";
+
         String ua = userAgent.toLowerCase();
-        if (ua.contains("chrome")) return "Chrome";
-        if (ua.contains("firefox")) return "Firefox";
-        if (ua.contains("safari")) return "Safari";
-        if (ua.contains("edge")) return "Edge";
-        if (ua.contains("opera")) return "Opera";
+        if (ua.contains("chrome"))
+            return "Chrome";
+        if (ua.contains("firefox"))
+            return "Firefox";
+        if (ua.contains("safari"))
+            return "Safari";
+        if (ua.contains("edge"))
+            return "Edge";
+        if (ua.contains("opera"))
+            return "Opera";
         return "Other";
     }
 
     private String detectOS(String userAgent) {
-        if (userAgent == null) return "Unknown";
-        
+        if (userAgent == null)
+            return "Unknown";
+
         String ua = userAgent.toLowerCase();
-        if (ua.contains("windows")) return "Windows";
-        if (ua.contains("mac")) return "macOS";
-        if (ua.contains("linux")) return "Linux";
-        if (ua.contains("android")) return "Android";
-        if (ua.contains("ios")) return "iOS";
+        if (ua.contains("windows"))
+            return "Windows";
+        if (ua.contains("mac"))
+            return "macOS";
+        if (ua.contains("linux"))
+            return "Linux";
+        if (ua.contains("android"))
+            return "Android";
+        if (ua.contains("ios"))
+            return "iOS";
         return "Other";
     }
 
     @Transactional
     public void createSampleData() {
-        System.out.println("Creating sample visitor data...");
-        
+        // Creating sample visitor data
+
         // Create sample data for the last 7 days
         for (int i = 0; i < 7; i++) {
             LocalDate date = LocalDate.now().minusDays(i);
-            
+
             // Create some sample visitors for each day
-            for (int j = 0; j < 5 + (int)(Math.random() * 10); j++) {
+            for (int j = 0; j < 5 + (int) (Math.random() * 10); j++) {
                 VisitorAnalytics visitor = VisitorAnalytics.builder()
                         .ipAddress("192.168.1." + (100 + j))
                         .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -250,11 +250,11 @@ public class VisitorAnalyticsService {
                         .os("Windows")
                         .visitDate(date)
                         .build();
-                
+
                 visitorAnalyticsRepository.save(visitor);
             }
         }
-        
-        System.out.println("Sample data created successfully");
+
+        // Sample data created successfully
     }
 }

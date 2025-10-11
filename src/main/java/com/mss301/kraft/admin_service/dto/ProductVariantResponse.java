@@ -19,6 +19,7 @@ public class ProductVariantResponse {
     private String sku;
     private BigDecimal price;
     private BigDecimal salePrice;
+    private Boolean onSale;
     private Integer stock;
     private String imageUrl;
 }

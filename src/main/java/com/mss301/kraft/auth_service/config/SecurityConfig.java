@@ -26,7 +26,7 @@ public class SecurityConfig {
     private final List<String> allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-            @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:9002}") List<String> allowedOrigins) {
+            @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:9002}") List<String> allowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.allowedOrigins = allowedOrigins;
     }
@@ -34,17 +34,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // Disabled for stateless JWT API
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.deny())
+                        .contentTypeOptions(contentTypeOptions -> {
+                        })
+                        .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                                .maxAgeInSeconds(31536000)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**",
-                                "/api/admin/sliders/active", "/api/products/**", "/api/blogs/**",
-                                "/api/collections/**", "/api/categories/**", "/api/coupons/**",
-                                "/api/reviews/product/*", "/api/reviews/product/*/stats",
-                                "/api/admin/bank-accounts/active", "/api/analytics/**", "/api/test/**")
-                        .permitAll()
+                        // Public endpoints - minimal set
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/api/admin/sliders/active").permitAll()
+                        .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/blogs/**").permitAll()
+                        .requestMatchers("/api/collections/**").permitAll()
+                        .requestMatchers("/api/categories/**").permitAll()
+                        .requestMatchers("/api/coupons/**").permitAll()
+                        .requestMatchers("/api/reviews/product/*").permitAll()
+                        .requestMatchers("/api/reviews/product/*/stats").permitAll()
+                        .requestMatchers("/api/admin/bank-accounts/active").permitAll()
+                        // Allow visitor tracking without authentication
+                        .requestMatchers("/api/analytics/track").permitAll()
+                        // SECURITY FIX: Other analytics endpoints require auth
+                        // .requestMatchers("/api/analytics/**").permitAll() // REMOVED - requires auth
+                        // .requestMatchers("/api/test/**").permitAll() // REMOVED - requires auth
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
@@ -53,11 +70,23 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+
+        // Security: Only allow specific origins
         config.setAllowedOrigins(allowedOrigins);
+
+        // Security: Limit allowed methods
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // Security: Limit allowed headers
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         config.setExposedHeaders(List.of("Authorization"));
+
+        // Security: Enable credentials only for trusted origins
         config.setAllowCredentials(true);
+
+        // Security: Set max age for preflight requests
+        config.setMaxAge(3600L); // 1 hour
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

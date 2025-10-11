@@ -209,10 +209,10 @@ public class ProductService {
                     priceMinOriginal = priceMinOriginal == null || base.compareTo(priceMinOriginal) < 0 ? base
                             : priceMinOriginal;
                 }
-                if (sale != null) {
+                if (sale != null && v.getOnSale() != null && v.getOnSale()) {
                     priceMinSale = priceMinSale == null || sale.compareTo(priceMinSale) < 0 ? sale : priceMinSale;
                 }
-                java.math.BigDecimal candidate = sale != null ? sale : base;
+                java.math.BigDecimal candidate = (sale != null && v.getOnSale() != null && v.getOnSale()) ? sale : base;
                 if (candidate != null) {
                     priceMin = priceMin == null || candidate.compareTo(priceMin) < 0 ? candidate : priceMin;
                 }

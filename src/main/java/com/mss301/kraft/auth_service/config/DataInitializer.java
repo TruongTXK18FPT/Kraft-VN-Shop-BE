@@ -21,7 +21,7 @@ public class DataInitializer {
                         existingAdmin.setRole(Role.ADMIN);
                         existingAdmin.setPasswordHash(passwordEncoder.encode("admin123"));
                         userRepository.save(existingAdmin);
-                        System.out.println("Updated existing admin user role");
+                        // Updated existing admin user role
                     },
                     () -> {
                         // Create new admin user
@@ -32,7 +32,7 @@ public class DataInitializer {
                         admin.setPasswordHash(passwordEncoder.encode("admin123"));
                         admin.setRole(Role.ADMIN);
                         userRepository.save(admin);
-                        System.out.println("Created new admin user");
+                        // Created new admin user
                     });
 
             // Basic normal user - matches frontend demo
@@ -42,7 +42,7 @@ public class DataInitializer {
                         existingUser.setRole(Role.USER);
                         existingUser.setPasswordHash(passwordEncoder.encode("123456"));
                         userRepository.save(existingUser);
-                        System.out.println("Updated existing user role");
+                        // Updated existing user role
                     },
                     () -> {
                         // Create new normal user
@@ -53,7 +53,7 @@ public class DataInitializer {
                         user.setPasswordHash(passwordEncoder.encode("123456"));
                         user.setRole(Role.USER);
                         userRepository.save(user);
-                        System.out.println("Created new user");
+                        // Created new user
                     });
         };
     }

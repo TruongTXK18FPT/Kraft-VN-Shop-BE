@@ -17,14 +17,11 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank
-    private String phone;
-
-    @NotBlank
     @Size(min = 8, max = 100)
     private String password;
 
-    // Required address fields
-    @NotBlank
+    // Optional contact and address fields
+    private String phone;
     private String province;
 
     // Optional address fields

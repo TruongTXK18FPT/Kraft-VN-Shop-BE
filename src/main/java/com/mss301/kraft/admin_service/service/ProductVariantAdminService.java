@@ -1,5 +1,6 @@
 package com.mss301.kraft.admin_service.service;
 
+import com.mss301.kraft.admin_service.dto.BulkSaleUpdateRequest;
 import com.mss301.kraft.admin_service.dto.ProductVariantRequest;
 import com.mss301.kraft.admin_service.dto.ProductVariantResponse;
 import com.mss301.kraft.product_service.entity.Product;
@@ -55,6 +56,24 @@ public class ProductVariantAdminService {
         productVariantRepository.deleteById(variantId);
     }
 
+    public List<ProductVariantResponse> bulkUpdateSale(BulkSaleUpdateRequest req) {
+        List<ProductVariant> variants = productVariantRepository.findAllById(req.getVariantIds());
+
+        for (ProductVariant variant : variants) {
+            if (req.getOnSale() != null) {
+                variant.setOnSale(req.getOnSale());
+            }
+            if (req.getSalePrice() != null) {
+                variant.setSalePrice(req.getSalePrice());
+            }
+            validateNumbers(variant);
+            validatePricing(variant);
+        }
+
+        List<ProductVariant> savedVariants = productVariantRepository.saveAll(variants);
+        return savedVariants.stream().map(this::toResponse).toList();
+    }
+
     private void apply(ProductVariant v, ProductVariantRequest req) {
         if (req.getColor() != null)
             v.setColor(req.getColor());
@@ -66,6 +85,8 @@ public class ProductVariantAdminService {
             v.setPrice(req.getPrice());
         if (req.getSalePrice() != null)
             v.setSalePrice(req.getSalePrice());
+        if (req.getOnSale() != null)
+            v.setOnSale(req.getOnSale());
         if (req.getStock() != null)
             v.setStock(req.getStock());
         if (req.getImageUrl() != null)
@@ -74,13 +95,16 @@ public class ProductVariantAdminService {
 
     private ProductVariantResponse toResponse(ProductVariant v) {
         return new ProductVariantResponse(v.getId(), v.getColor(), v.getSize(), v.getSku(), v.getPrice(),
-                v.getSalePrice(), v.getStock(), v.getImageUrl());
+                v.getSalePrice(), v.getOnSale(), v.getStock(), v.getImageUrl());
     }
 
     private void validatePricing(ProductVariant v) {
-        if (v.getSalePrice() != null) {
+        if (v.getOnSale() != null && v.getOnSale()) {
             if (v.getPrice() == null) {
-                throw new IllegalArgumentException("Price is required when sale price is set");
+                throw new IllegalArgumentException("Price is required when sale is enabled");
+            }
+            if (v.getSalePrice() == null) {
+                throw new IllegalArgumentException("Sale price is required when sale is enabled");
             }
             if (v.getSalePrice().compareTo(v.getPrice()) >= 0) {
                 throw new IllegalArgumentException("Sale price must be lower than price");

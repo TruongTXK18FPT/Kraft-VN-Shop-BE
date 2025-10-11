@@ -21,6 +21,7 @@ import com.mss301.kraft.user_service.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -77,7 +78,7 @@ public class OrderService {
      * Create an order from the user's cart
      * Transaction ensures atomicity: order + items created together, cart cleared
      */
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public OrderResponse createOrderFromCart(Authentication authentication, CreateOrderRequest request) {
         // Get current user
         String email = authentication.getName();
@@ -94,17 +95,6 @@ public class OrderService {
         // Validate cart has items
         if (cart.getItems() == null || cart.getItems().isEmpty()) {
             throw new RuntimeException("Cart is empty");
-        }
-
-        // DEBUG: Log cart items count
-        System.out.println("DEBUG: Cart ID: " + cart.getId() + ", Items count: " + cart.getItems().size());
-        for (CartItem item : cart.getItems()) {
-            System.out.println("DEBUG: Cart Item ID: " + item.getId() + ", Product: " +
-                    (item.getProductVariant() != null && item.getProductVariant().getProduct() != null
-                            ? item.getProductVariant().getProduct().getName()
-                            : "Unknown")
-                    +
-                    ", Qty: " + item.getQty());
         }
 
         // Create order
@@ -129,20 +119,8 @@ public class OrderService {
         BigDecimal itemsTotal = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
 
-        System.out.println("DEBUG: Starting to process " + cart.getItems().size() + " cart items");
-
         for (CartItem cartItem : cart.getItems()) {
             ProductVariant variant = cartItem.getProductVariant();
-            System.out.println("DEBUG: Processing cart item: " + cartItem.getId());
-
-            // Check if sufficient stock is available
-            if (variant.getStock() == null || variant.getStock() < cartItem.getQty()) {
-                throw new RuntimeException("Insufficient stock for product: " +
-                        (variant.getProduct() != null ? variant.getProduct().getName() : "Unknown") +
-                        " (SKU: " + variant.getSku() + "). Available: " +
-                        (variant.getStock() != null ? variant.getStock() : 0) +
-                        ", Requested: " + cartItem.getQty());
-            }
 
             // Create order item
             OrderItem orderItem = new OrderItem();
@@ -154,14 +132,22 @@ public class OrderService {
             BigDecimal lineTotal = cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQty()));
             itemsTotal = itemsTotal.add(lineTotal);
 
-            // Deduct stock from product variant
-            variant.setStock(variant.getStock() - cartItem.getQty());
+            // Atomic stock deduction with validation
+            int currentStock = variant.getStock() != null ? variant.getStock() : 0;
+            int requestedQty = cartItem.getQty();
+
+            if (currentStock < requestedQty) {
+                throw new RuntimeException("Insufficient stock for product: " +
+                        (variant.getProduct() != null ? variant.getProduct().getName() : "Unknown") +
+                        " (SKU: " + variant.getSku() + "). Available: " + currentStock +
+                        ", Requested: " + requestedQty);
+            }
+
+            // Deduct stock atomically
+            variant.setStock(currentStock - requestedQty);
 
             orderItems.add(orderItem);
-            System.out.println("DEBUG: Added order item, total order items now: " + orderItems.size());
         }
-
-        System.out.println("DEBUG: Finished processing all items. Total order items: " + orderItems.size());
 
         // Process coupon if provided - Single validation and application
         BigDecimal discountAmount = BigDecimal.ZERO;
@@ -169,9 +155,6 @@ public class OrderService {
         com.mss301.kraft.coupon_service.entity.Coupon coupon = null;
         if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
             try {
-                System.out.println("DEBUG: Validating coupon - Code: " + request.getCouponCode() +
-                        ", UserId: " + user.getId() +
-                        ", OrderTotal: " + itemsTotal);
                 ValidateCouponRequest validateRequest = ValidateCouponRequest.builder()
                         .couponCode(request.getCouponCode())
                         .userId(user.getId())
@@ -179,26 +162,17 @@ public class OrderService {
                         .build();
 
                 CouponValidationResponse validation = couponService.validateCoupon(validateRequest);
-                System.out.println("DEBUG: Coupon validation result - Valid: " + validation.getValid() +
-                        ", DiscountAmount: " + validation.getDiscountAmount() +
-                        ", Message: " + validation.getMessage());
                 if (validation.getValid()) {
                     discountAmount = validation.getDiscountAmount();
                     couponCode = request.getCouponCode();
                     // Get the coupon entity by ID
                     coupon = couponService.getCouponEntityById(validation.getCouponId());
-                    System.out.println("DEBUG: Coupon validated successfully - CouponId: " + coupon.getId() +
-                            ", DiscountAmount: " + discountAmount);
                 } else {
                     throw new RuntimeException("Coupon validation failed: " + validation.getMessage());
                 }
             } catch (Exception e) {
-                System.err.println("DEBUG: Coupon validation error: " + e.getMessage());
-                e.printStackTrace();
                 throw new RuntimeException("Invalid coupon: " + e.getMessage());
             }
-        } else {
-            System.out.println("DEBUG: No coupon code provided in request");
         }
 
         // Set total = items total + shipping fee - discount
@@ -209,29 +183,17 @@ public class OrderService {
         order.setDiscountAmount(discountAmount);
         order.setItems(orderItems);
 
-        System.out.println("DEBUG: Set order items, count: " + order.getItems().size());
-
         // Save order (cascade will save order items)
         Order savedOrder = orderRepository.save(order);
 
         // Apply coupon usage after order is created with the actual order ID
         if (coupon != null && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
             try {
-                System.out.println("DEBUG: Applying coupon - CouponId: " + coupon.getId() +
-                        ", UserId: " + user.getId() +
-                        ", OrderId: " + savedOrder.getId() +
-                        ", DiscountAmount: " + discountAmount);
                 couponService.applyCoupon(coupon.getId(), user.getId(), savedOrder.getId(), discountAmount);
-                System.out.println("DEBUG: Coupon application completed successfully");
             } catch (Exception e) {
-                System.err.println("DEBUG: Coupon application failed: " + e.getMessage());
-                e.printStackTrace();
                 // This is critical - if we can't apply coupon usage, we should rollback
                 throw new RuntimeException("Failed to apply coupon usage: " + e.getMessage());
             }
-        } else {
-            System.out.println("DEBUG: No coupon to apply - Coupon: " + coupon +
-                    ", DiscountAmount: " + discountAmount);
         }
 
         // Clear cart items after successful order creation

@@ -31,6 +31,6 @@ public class ProductVariantService {
 
     private ProductVariantResponse toResponse(ProductVariant v) {
         return new ProductVariantResponse(v.getId(), v.getColor(), v.getSize(), v.getSku(), v.getPrice(),
-                v.getSalePrice(), v.getStock(), v.getImageUrl());
+                v.getSalePrice(), v.getOnSale(), v.getStock(), v.getImageUrl());
     }
 }

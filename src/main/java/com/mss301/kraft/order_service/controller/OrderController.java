@@ -7,12 +7,15 @@ import com.mss301.kraft.order_service.service.OrderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
+@Validated
 public class OrderController {
 
     private final OrderService orderService;
@@ -28,7 +31,7 @@ public class OrderController {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponse> createOrder(
-            @RequestBody CreateOrderRequest request,
+            @Valid @RequestBody CreateOrderRequest request,
             Authentication authentication) {
         OrderResponse order = orderService.createOrderFromCart(authentication, request);
         return ResponseEntity.ok(order);

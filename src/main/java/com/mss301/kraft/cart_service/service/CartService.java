@@ -95,7 +95,9 @@ public class CartService {
             item.setCart(cart);
             item.setProductVariant(variant);
             item.setQty(addQty);
-            item.setPrice(variant.getSalePrice() != null ? variant.getSalePrice() : variant.getPrice());
+            item.setPrice((variant.getSalePrice() != null && variant.getOnSale() != null && variant.getOnSale())
+                    ? variant.getSalePrice()
+                    : variant.getPrice());
         } else {
             int next = item.getQty() + addQty;
             item.setQty(Math.min(next, stock));

@@ -1,5 +1,6 @@
 package com.mss301.kraft.admin_service.controller;
 
+import com.mss301.kraft.admin_service.dto.BulkSaleUpdateRequest;
 import com.mss301.kraft.admin_service.dto.ProductVariantRequest;
 import com.mss301.kraft.admin_service.dto.ProductVariantResponse;
 import com.mss301.kraft.admin_service.service.ProductVariantAdminService;
@@ -42,5 +43,11 @@ public class ProductVariantAdminController {
     public ResponseEntity<Void> delete(@PathVariable UUID productId, @PathVariable UUID variantId) {
         variantAdminService.delete(variantId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/bulk-sale")
+    public ResponseEntity<List<ProductVariantResponse>> bulkUpdateSale(@PathVariable UUID productId,
+            @RequestBody BulkSaleUpdateRequest request) {
+        return ResponseEntity.ok(variantAdminService.bulkUpdateSale(request));
     }
 }
