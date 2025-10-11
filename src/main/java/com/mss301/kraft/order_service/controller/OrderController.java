@@ -2,6 +2,7 @@ package com.mss301.kraft.order_service.controller;
 
 import com.mss301.kraft.order_service.dto.CreateOrderRequest;
 import com.mss301.kraft.order_service.dto.OrderResponse;
+import com.mss301.kraft.order_service.dto.CancelOrderRequest;
 import com.mss301.kraft.order_service.service.OrderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,6 +54,20 @@ public class OrderController {
             @PathVariable String code,
             Authentication authentication) {
         OrderResponse order = orderService.getOrderByCode(authentication, code);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
+     * Cancel an order
+     * User can only cancel their own orders
+     */
+    @PutMapping("/{orderId}/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @PathVariable String orderId,
+            @RequestBody(required = false) CancelOrderRequest request,
+            Authentication authentication) {
+        OrderResponse order = orderService.cancelOrder(authentication, orderId, request);
         return ResponseEntity.ok(order);
     }
 }

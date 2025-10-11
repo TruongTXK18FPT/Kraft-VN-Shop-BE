@@ -11,6 +11,7 @@ import com.mss301.kraft.coupon_service.dto.CouponValidationResponse;
 import com.mss301.kraft.order_service.dto.CreateOrderRequest;
 import com.mss301.kraft.order_service.dto.OrderItemResponse;
 import com.mss301.kraft.order_service.dto.OrderResponse;
+import com.mss301.kraft.order_service.dto.CancelOrderRequest;
 import com.mss301.kraft.order_service.entity.Order;
 import com.mss301.kraft.order_service.entity.OrderItem;
 import com.mss301.kraft.order_service.repository.OrderRepository;
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -161,30 +163,42 @@ public class OrderService {
 
         System.out.println("DEBUG: Finished processing all items. Total order items: " + orderItems.size());
 
-        // Process coupon if provided
+        // Process coupon if provided - Single validation and application
         BigDecimal discountAmount = BigDecimal.ZERO;
         String couponCode = null;
         com.mss301.kraft.coupon_service.entity.Coupon coupon = null;
         if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
             try {
+                System.out.println("DEBUG: Validating coupon - Code: " + request.getCouponCode() +
+                        ", UserId: " + user.getId() +
+                        ", OrderTotal: " + itemsTotal);
                 ValidateCouponRequest validateRequest = ValidateCouponRequest.builder()
                         .couponCode(request.getCouponCode())
                         .userId(user.getId())
                         .orderTotal(itemsTotal)
                         .build();
-                
+
                 CouponValidationResponse validation = couponService.validateCoupon(validateRequest);
+                System.out.println("DEBUG: Coupon validation result - Valid: " + validation.getValid() +
+                        ", DiscountAmount: " + validation.getDiscountAmount() +
+                        ", Message: " + validation.getMessage());
                 if (validation.getValid()) {
                     discountAmount = validation.getDiscountAmount();
                     couponCode = request.getCouponCode();
                     // Get the coupon entity by ID
                     coupon = couponService.getCouponEntityById(validation.getCouponId());
+                    System.out.println("DEBUG: Coupon validated successfully - CouponId: " + coupon.getId() +
+                            ", DiscountAmount: " + discountAmount);
                 } else {
                     throw new RuntimeException("Coupon validation failed: " + validation.getMessage());
                 }
             } catch (Exception e) {
+                System.err.println("DEBUG: Coupon validation error: " + e.getMessage());
+                e.printStackTrace();
                 throw new RuntimeException("Invalid coupon: " + e.getMessage());
             }
+        } else {
+            System.out.println("DEBUG: No coupon code provided in request");
         }
 
         // Set total = items total + shipping fee - discount
@@ -200,23 +214,24 @@ public class OrderService {
         // Save order (cascade will save order items)
         Order savedOrder = orderRepository.save(order);
 
-        // Apply coupon usage after order is created
-        if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty() && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+        // Apply coupon usage after order is created with the actual order ID
+        if (coupon != null && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
             try {
-                ValidateCouponRequest validateRequest = ValidateCouponRequest.builder()
-                        .couponCode(request.getCouponCode())
-                        .userId(user.getId())
-                        .orderTotal(itemsTotal)
-                        .build();
-                
-                CouponValidationResponse validation = couponService.validateCoupon(validateRequest);
-                if (validation.getValid()) {
-                    couponService.applyCoupon(validation.getCouponId(), user.getId(), savedOrder.getId(), discountAmount);
-                }
+                System.out.println("DEBUG: Applying coupon - CouponId: " + coupon.getId() +
+                        ", UserId: " + user.getId() +
+                        ", OrderId: " + savedOrder.getId() +
+                        ", DiscountAmount: " + discountAmount);
+                couponService.applyCoupon(coupon.getId(), user.getId(), savedOrder.getId(), discountAmount);
+                System.out.println("DEBUG: Coupon application completed successfully");
             } catch (Exception e) {
-                // Log error but don't fail the order creation
-                System.err.println("Failed to apply coupon usage: " + e.getMessage());
+                System.err.println("DEBUG: Coupon application failed: " + e.getMessage());
+                e.printStackTrace();
+                // This is critical - if we can't apply coupon usage, we should rollback
+                throw new RuntimeException("Failed to apply coupon usage: " + e.getMessage());
             }
+        } else {
+            System.out.println("DEBUG: No coupon to apply - Coupon: " + coupon +
+                    ", DiscountAmount: " + discountAmount);
         }
 
         // Clear cart items after successful order creation
@@ -322,5 +337,48 @@ public class OrderService {
         response.setLineTotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQty())));
 
         return response;
+    }
+
+    /**
+     * Cancel an order
+     * Only allows cancellation of COD orders in PROCESSING status
+     */
+    @Transactional
+    public OrderResponse cancelOrder(Authentication authentication, String orderId, CancelOrderRequest request) {
+        // Get current user
+        String username = authentication.getName();
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        // Find the order
+        Order order = orderRepository.findById(UUID.fromString(orderId))
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // Check if user owns the order
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied: You can only cancel your own orders");
+        }
+
+        // Check if order can be cancelled
+        if (!canCancelOrder(order)) {
+            throw new RuntimeException(
+                    "Order cannot be cancelled. Only COD orders in PROCESSING status can be cancelled.");
+        }
+
+        // Update order status to CANCELED
+        order.setStatus(OrderStatus.CANCELED);
+        // Note: Cancellation reason is not stored in the current entity
+
+        Order savedOrder = orderRepository.save(order);
+        return toOrderResponse(savedOrder);
+    }
+
+    /**
+     * Check if an order can be cancelled
+     */
+    private boolean canCancelOrder(Order order) {
+        // Only COD orders in PROCESSING status can be cancelled
+        return "cod".equalsIgnoreCase(order.getPaymentMethod()) &&
+                order.getStatus() == OrderStatus.PROCESSING;
     }
 }

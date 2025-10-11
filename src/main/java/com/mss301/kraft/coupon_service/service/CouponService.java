@@ -7,7 +7,6 @@ import com.mss301.kraft.coupon_service.dto.*;
 import com.mss301.kraft.coupon_service.entity.Coupon;
 import com.mss301.kraft.coupon_service.entity.CouponUsage;
 import com.mss301.kraft.coupon_service.enums.CouponStatus;
-import com.mss301.kraft.coupon_service.enums.CouponType;
 import com.mss301.kraft.coupon_service.exception.CouponAlreadyExistsException;
 import com.mss301.kraft.coupon_service.exception.CouponNotFoundException;
 import com.mss301.kraft.coupon_service.repository.CouponRepository;
@@ -158,9 +157,9 @@ public class CouponService {
     }
 
     public CouponValidationResponse validateCoupon(ValidateCouponRequest request) {
-        log.info("Validating coupon: {} for user: {} with order total: {}", 
+        log.info("Validating coupon: {} for user: {} with order total: {}",
                 request.getCouponCode(), request.getUserId(), request.getOrderTotal());
-        
+
         Coupon coupon = couponRepository.findActiveByCode(request.getCouponCode(), OffsetDateTime.now())
                 .orElse(null);
 
@@ -171,16 +170,29 @@ public class CouponService {
                     .message("Mã giảm giá không hợp lệ hoặc đã hết hạn")
                     .build();
         }
-        
-        log.info("Found coupon: {} - Status: {}, Starts: {}, Expires: {}", 
+
+        log.info("Found coupon: {} - Status: {}, Starts: {}, Expires: {}",
                 coupon.getCode(), coupon.getStatus(), coupon.getStartsAt(), coupon.getExpiresAt());
 
         // Check usage limit per user
         if (coupon.getUsageLimitPerUser() != null) {
             Long userUsageCount = couponUsageRepository.countByCouponIdAndUserId(
                     coupon.getId(), request.getUserId());
-            
+
+            // Debug: List all existing usages for this user and coupon
+            List<CouponUsage> existingUsages = couponUsageRepository.findByCouponIdAndUserIdOrderByCreatedAtDesc(
+                    coupon.getId(), request.getUserId());
+            log.info("Existing coupon usages for user {} and coupon {}: {}",
+                    request.getUserId(), coupon.getId(), existingUsages.size());
+            for (CouponUsage usage : existingUsages) {
+                log.info("Usage: OrderId={}, DiscountAmount={}, CreatedAt={}",
+                        usage.getOrderId(), usage.getDiscountAmount(), usage.getCreatedAt());
+            }
+
             log.info("User usage count: {} / {}", userUsageCount, coupon.getUsageLimitPerUser());
+            log.info("Checking if user has reached limit: {} >= {} = {}",
+                    userUsageCount, coupon.getUsageLimitPerUser(),
+                    userUsageCount >= coupon.getUsageLimitPerUser());
 
             if (userUsageCount >= coupon.getUsageLimitPerUser()) {
                 log.warn("User has exceeded usage limit for coupon: {}", coupon.getCode());
@@ -194,13 +206,13 @@ public class CouponService {
         // Check conditions
         Map<String, Object> conditions = convertJsonToConditions(coupon.getConditionsJson());
         log.info("Coupon conditions: {}", conditions);
-        
+
         if (conditions != null) {
             // Check min spend
             if (conditions.containsKey("minSpend")) {
                 BigDecimal minSpend = new BigDecimal(conditions.get("minSpend").toString());
                 log.info("Checking min spend: {} vs order total: {}", minSpend, request.getOrderTotal());
-                
+
                 if (request.getOrderTotal().compareTo(minSpend) < 0) {
                     log.warn("Order total {} is less than min spend {}", request.getOrderTotal(), minSpend);
                     return CouponValidationResponse.builder()
@@ -214,7 +226,7 @@ public class CouponService {
         // Calculate discount
         BigDecimal discountAmount = calculateDiscount(coupon, request.getOrderTotal(), conditions);
         BigDecimal finalAmount = request.getOrderTotal().subtract(discountAmount);
-        
+
         log.info("Coupon validation successful - Discount: {}, Final amount: {}", discountAmount, finalAmount);
 
         return CouponValidationResponse.builder()
@@ -226,7 +238,6 @@ public class CouponService {
                 .build();
     }
 
-    @Transactional
     public void applyCoupon(UUID couponId, UUID userId, UUID orderId, BigDecimal discountAmount) {
         Coupon coupon = couponRepository.findById(couponId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy coupon"));

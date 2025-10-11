@@ -191,6 +191,24 @@ public class CartService {
         cart.setTotal(total);
     }
 
+    @Transactional
+    public void clearAllUserCarts() {
+        User currentUser = resolveCurrentUser();
+        List<Cart> userCarts = cartRepository.findByUser(currentUser);
+        for (Cart cart : userCarts) {
+            // Clear all items in each cart
+            for (CartItem item : cartItemRepository.findByCart(cart)) {
+                cartItemRepository.delete(item);
+            }
+            // Clear the cart items list
+            if (cart.getItems() != null) {
+                cart.getItems().clear();
+            }
+            cart.setTotal(BigDecimal.ZERO);
+            cartRepository.save(cart);
+        }
+    }
+
     private CartResponse toResponse(Cart cart) {
         // Always fetch a fresh list to avoid stale proxies after delete operations
         List<CartItem> items = cartItemRepository.findByCart(cart);

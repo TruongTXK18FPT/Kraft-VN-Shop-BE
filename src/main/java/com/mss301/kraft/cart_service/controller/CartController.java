@@ -52,4 +52,12 @@ public class CartController {
     public ResponseEntity<CartResponse> clear(@PathVariable UUID cartId) {
         return ResponseEntity.ok(cartService.clear(cartId));
     }
+
+    // Clear all carts for the current user (for logout)
+    @DeleteMapping("/user/clear-all")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> clearAllUserCarts() {
+        cartService.clearAllUserCarts();
+        return ResponseEntity.ok().build();
+    }
 }
