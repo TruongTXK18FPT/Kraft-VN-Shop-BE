@@ -1,0 +1,86 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://shuttle.proxy.rlwy.net:37061/railway
+    username: postgres
+    password: KeyKwqISvQCUKPgHIWckJZwSpBDkCIpn
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+# JWT Configuration for Production
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION}
+
+# Cloudinary Configuration for Production
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+  secure: ${CLOUDINARY_SECURE:true}
+  folder:
+    products: ${CLOUDINARY_FOLDER_PRODUCTS:kraft/products}
+    avatars: ${CLOUDINARY_FOLDER_AVATARS:kraft/avatars}
+    categories: ${CLOUDINARY_FOLDER_CATEGORIES:kraft/categories}
+    banners: ${CLOUDINARY_FOLDER_BANNERS:kraft/banners}
+    blogs: ${CLOUDINARY_FOLDER_BLOGS:kraft/blogs}
+    brands: ${CLOUDINARY_FOLDER_BRANDS:kraft/brands}
+    collections: ${CLOUDINARY_FOLDER_COLLECTIONS:kraft/collections}
+    others: ${CLOUDINARY_FOLDER_OTHERS:kraft/others}
+
+# Server Configuration for Production
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+# Logging Configuration for Production
+logging:
+  level:
+    root: WARN
+    com.mss301.kraft: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+  charset:
+    console: UTF-8
+    file: UTF-8
+
+# App custom configuration for Production
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  file-storage:
+    upload-dir: ${FILE_UPLOAD_DIR:uploads}
+    base-url: ${FILE_BASE_URL}
+  storage:
+    type: ${STORAGE_TYPE:cloudinary}
+    upload-dir: ${FILE_UPLOAD_DIR:uploads}
+    base-url: ${FILE_BASE_URL}
+    cdn-url: ${CDN_URL}

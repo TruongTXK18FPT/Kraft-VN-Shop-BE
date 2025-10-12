@@ -1,0 +1,77 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+# JWT Configuration for Development
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION}
+
+# Cloudinary Configuration for Development
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+  secure: ${CLOUDINARY_SECURE:true}
+  folder:
+    products: ${CLOUDINARY_FOLDER_PRODUCTS:kraft/products}
+    avatars: ${CLOUDINARY_FOLDER_AVATARS:kraft/avatars}
+    categories: ${CLOUDINARY_FOLDER_CATEGORIES:kraft/categories}
+    banners: ${CLOUDINARY_FOLDER_BANNERS:kraft/banners}
+    blogs: ${CLOUDINARY_FOLDER_BLOGS:kraft/blogs}
+    brands: ${CLOUDINARY_FOLDER_BRANDS:kraft/brands}
+    collections: ${CLOUDINARY_FOLDER_COLLECTIONS:kraft/collections}
+    others: ${CLOUDINARY_FOLDER_OTHERS:kraft/others}
+
+# Server Configuration for Development
+server:
+  port: ${SERVER_PORT}
+
+# Logging Configuration for Development
+logging:
+  level:
+    root: INFO
+    com.mss301.kraft: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  charset:
+    console: UTF-8
+    file: UTF-8
+
+# App custom configuration for Development
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  file-storage:
+    upload-dir: uploads
+    base-url: http://localhost:8080/api/files
+  storage:
+    type: local
+    upload-dir: uploads
+    base-url: http://localhost:8080/api/files
+    cdn-url:

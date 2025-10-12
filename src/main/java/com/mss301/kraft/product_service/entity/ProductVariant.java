@@ -45,7 +45,7 @@ public class ProductVariant extends BaseEntity {
         @Column(name = "sale_price")
         private BigDecimal salePrice;
 
-        @Column(name = "on_sale", nullable = false)
+        @Column(name = "on_sale")
         private Boolean onSale = false;
 
         @Column(name = "stock")
