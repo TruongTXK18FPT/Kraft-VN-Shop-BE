@@ -26,7 +26,7 @@ public class SecurityConfig {
     private final List<String> allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-            @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:9002}") List<String> allowedOrigins) {
+            @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:9002,https://kraft-vn.vercel.app}") List<String> allowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.allowedOrigins = allowedOrigins;
     }
