@@ -84,52 +84,101 @@ public class VisitorAnalyticsService {
         return visitorAnalyticsRepository.countTotalVisitsByDate(LocalDate.now());
     }
 
+    public Long getTotalRecords() {
+        return visitorAnalyticsRepository.count();
+    }
+
     public VisitorAnalyticsResponse getVisitorStats(int days) {
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusDays(days - 1);
+        try {
+            LocalDate endDate = LocalDate.now();
+            LocalDate startDate = endDate.minusDays(days - 1);
 
-        // Get today's stats
-        VisitorAnalyticsResponse.TodayStats todayStats = VisitorAnalyticsResponse.TodayStats.builder()
-                .uniqueVisitors(getTodayUniqueVisitors().intValue())
-                .totalVisits(getTodayTotalVisits().intValue())
-                .date(endDate.toString())
-                .build();
+            // Get today's stats with null safety
+            Long todayUnique = getTodayUniqueVisitors();
+            Long todayTotal = getTodayTotalVisits();
+            
+            VisitorAnalyticsResponse.TodayStats todayStats = VisitorAnalyticsResponse.TodayStats.builder()
+                    .uniqueVisitors(todayUnique != null ? todayUnique.intValue() : 0)
+                    .totalVisits(todayTotal != null ? todayTotal.intValue() : 0)
+                    .date(endDate.toString())
+                    .build();
 
-        // Get device type stats
-        List<VisitorAnalyticsResponse.DeviceTypeStats> deviceTypes = getDeviceTypeStats(startDate, endDate)
-                .stream()
-                .map(stat -> VisitorAnalyticsResponse.DeviceTypeStats.builder()
-                        .deviceType((String) stat.get("deviceType"))
-                        .visitors((Integer) stat.get("visitors"))
-                        .build())
-                .collect(Collectors.toList());
+            // Get device type stats with null safety
+            List<VisitorAnalyticsResponse.DeviceTypeStats> deviceTypes = getDeviceTypeStats(startDate, endDate)
+                    .stream()
+                    .map(stat -> {
+                        String deviceType = (String) stat.get("deviceType");
+                        Object visitorsObj = stat.get("visitors");
+                        int visitors = 0;
+                        if (visitorsObj instanceof Number) {
+                            visitors = ((Number) visitorsObj).intValue();
+                        }
+                        return VisitorAnalyticsResponse.DeviceTypeStats.builder()
+                                .deviceType(deviceType != null ? deviceType : "Unknown")
+                                .visitors(visitors)
+                                .build();
+                    })
+                    .collect(Collectors.toList());
 
-        // Get country stats
-        List<VisitorAnalyticsResponse.CountryStats> countries = getCountryStats(startDate, endDate)
-                .stream()
-                .map(stat -> VisitorAnalyticsResponse.CountryStats.builder()
-                        .country((String) stat.get("country"))
-                        .visitors((Integer) stat.get("visitors"))
-                        .build())
-                .collect(Collectors.toList());
+            // Get country stats with null safety
+            List<VisitorAnalyticsResponse.CountryStats> countries = getCountryStats(startDate, endDate)
+                    .stream()
+                    .map(stat -> {
+                        String country = (String) stat.get("country");
+                        Object visitorsObj = stat.get("visitors");
+                        int visitors = 0;
+                        if (visitorsObj instanceof Number) {
+                            visitors = ((Number) visitorsObj).intValue();
+                        }
+                        return VisitorAnalyticsResponse.CountryStats.builder()
+                                .country(country != null ? country : "Unknown")
+                                .visitors(visitors)
+                                .build();
+                    })
+                    .collect(Collectors.toList());
 
-        // Get daily stats
-        List<VisitorAnalyticsResponse.DailyStats> dailyStats = visitorAnalyticsRepository
-                .getVisitorStatsBetween(startDate, endDate)
-                .stream()
-                .map(stat -> VisitorAnalyticsResponse.DailyStats.builder()
-                        .date(stat[0].toString())
-                        .uniqueVisitors(((Number) stat[1]).intValue())
-                        .totalVisits(((Number) stat[2]).intValue())
-                        .build())
-                .collect(Collectors.toList());
+            // Get daily stats with null safety
+            List<VisitorAnalyticsResponse.DailyStats> dailyStats = visitorAnalyticsRepository
+                    .getVisitorStatsBetween(startDate, endDate)
+                    .stream()
+                    .map(stat -> {
+                        String date = stat[0] != null ? stat[0].toString() : endDate.toString();
+                        int uniqueVisitors = 0;
+                        int totalVisits = 0;
+                        if (stat[1] instanceof Number) {
+                            uniqueVisitors = ((Number) stat[1]).intValue();
+                        }
+                        if (stat[2] instanceof Number) {
+                            totalVisits = ((Number) stat[2]).intValue();
+                        }
+                        return VisitorAnalyticsResponse.DailyStats.builder()
+                                .date(date)
+                                .uniqueVisitors(uniqueVisitors)
+                                .totalVisits(totalVisits)
+                                .build();
+                    })
+                    .collect(Collectors.toList());
 
-        return VisitorAnalyticsResponse.builder()
-                .todayStats(todayStats)
-                .deviceTypes(deviceTypes)
-                .countries(countries)
-                .dailyStats(dailyStats)
-                .build();
+            return VisitorAnalyticsResponse.builder()
+                    .todayStats(todayStats)
+                    .deviceTypes(deviceTypes)
+                    .countries(countries)
+                    .dailyStats(dailyStats)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error getting visitor stats", e);
+            // Return empty response instead of throwing
+            return VisitorAnalyticsResponse.builder()
+                    .todayStats(VisitorAnalyticsResponse.TodayStats.builder()
+                            .uniqueVisitors(0)
+                            .totalVisits(0)
+                            .date(LocalDate.now().toString())
+                            .build())
+                    .deviceTypes(List.of())
+                    .countries(List.of())
+                    .dailyStats(List.of())
+                    .build();
+        }
     }
 
     public Map<String, Object> getVisitorStatsForPeriod(LocalDate startDate, LocalDate endDate) {

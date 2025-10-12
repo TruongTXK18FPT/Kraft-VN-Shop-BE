@@ -120,6 +120,28 @@ public class VisitorAnalyticsController {
         }
     }
 
+    @GetMapping("/test/check-data")
+    @Operation(summary = "Check if there's any data in the database")
+    public ResponseEntity<Map<String, Object>> checkData() {
+        try {
+            Long totalRecords = visitorAnalyticsService.getTotalRecords();
+            Long todayVisitors = visitorAnalyticsService.getTodayUniqueVisitors();
+            Long todayVisits = visitorAnalyticsService.getTodayTotalVisits();
+            
+            Map<String, Object> result = Map.of(
+                    "totalRecords", totalRecords,
+                    "todayVisitors", todayVisitors,
+                    "todayVisits", todayVisits,
+                    "hasData", totalRecords > 0,
+                    "message", "Data check completed"
+            );
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/test/simple-stats")
     @Operation(summary = "Get simple visitor stats for testing")
     public ResponseEntity<Map<String, Object>> getSimpleStats() {
@@ -198,6 +220,32 @@ public class VisitorAnalyticsController {
                     "uniqueVisitors", uniqueVisitors,
                     "period", Map.of("startDate", startDate.toString(), "endDate", endDate.toString()),
                     "message", "Simple visitor stats retrieved successfully");
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/test/visitor-stats")
+    @Operation(summary = "Get comprehensive visitor stats for testing")
+    public ResponseEntity<Map<String, Object>> testVisitorStats() {
+        try {
+            LocalDate endDate = LocalDate.now();
+
+            // Get comprehensive analytics data
+            VisitorAnalyticsResponse response = visitorAnalyticsService.getVisitorStats(7);
+            
+            Map<String, Object> result = Map.of(
+                    "todayStats", Map.of(
+                            "uniqueVisitors", response.getTodayStats().getUniqueVisitors(),
+                            "totalVisits", response.getTodayStats().getTotalVisits(),
+                            "date", endDate.toString()
+                    ),
+                    "deviceTypes", response.getDeviceTypes(),
+                    "countries", response.getCountries(),
+                    "dailyStats", response.getDailyStats(),
+                    "message", "Comprehensive visitor stats retrieved successfully");
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
